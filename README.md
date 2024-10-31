@@ -100,3 +100,87 @@ func main() {
     fmt.Println(math.Sin(n))
 }
 ```
+
+## For
+
+*for* is Go’s *only looping construct*. 
+Here are some basic types of for loops.
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+    // The most basic type, with a single condition.
+    i := 1
+    for i <= 3 {
+        fmt.Println(i)
+        i = i + 1
+    }
+
+    // classic for
+    for j := 0; j < 3; j++ {
+        fmt.Println(j)
+    }
+
+    // range
+    for i := range 3 {
+        fmt.Println("range", i)
+    }
+
+    // for without a condition will loop repeatedly until you break out of the loop 
+    // or return from the enclosing function.
+    for {
+        fmt.Println("loop")
+        break
+    }
+
+    // continue to the next iteration 
+    for n := range 6 {
+        if n%2 == 0 {
+            continue
+        }
+        fmt.Println(n)
+    }
+}
+```
+
+## If
+
+Branching with if and else in Go is straight-forward.
+You don’t need parentheses around conditions 
+There is no ternary if.
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+
+	if 7%2 == 0 {
+		fmt.Println("7 is even")
+	} else {
+		fmt.Println("7 is odd")
+	}
+
+	if 8%4 == 0 {
+		fmt.Println("8 is divisible by 4")
+	}
+
+	if 8%2 == 0 || 7%2 == 0 {
+		fmt.Println("either 8 or 7 are even")
+	}
+
+	// A statement can precede conditionals.
+	// Any variables declared in this statement are available in the current and all subsequent branches.
+	if num := 9; num < 0 {
+		fmt.Println(num, "is negative")
+	} else if num < 10 {
+		fmt.Println(num, "has 1 digit")
+	} else {
+		fmt.Println(num, "has multiple digits")
+	}
+}
+```
