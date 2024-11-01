@@ -298,6 +298,7 @@ func main() {
 To create an empty slice with non-zero length, use the builtin *make*.
 By default a new slice’s capacity is equal to its length; if we know the slice is going to grow ahead of time, it’s possible to pass a capacity explicitly.
 *len* returns the length of the slice
+The slices package contains a number of useful utility [functions](https://go.dev/blog/slices-intro). 
 
 ```go
 package main
@@ -357,5 +358,59 @@ func main() {
         }
     }
     fmt.Println("2d: ", twoD)
+}
+```
+
+## Maps
+
+Maps are Go’s built-in associative data type (hashes / dictionaries).
+Set key/value pairs using typical name[key] = val syntax.
+Get a value for a key with name[key].
+If the key doesn’t exist, the [zero value](https://go.dev/ref/spec#The_zero_value)
+The builtin *len* returns the number of key/value pairs.
+The builtin *delete* removes key/value pairs from a map.
+To remove all key/value pairs from a map, use the *clear* builtin.
+
+```go
+package main
+
+import (
+    "fmt"
+    "maps"
+)
+
+func main() {
+
+    m := make(map[string]int)
+
+    m["k1"] = 7
+    m["k2"] = 13
+
+    fmt.Println("map:", m)
+
+    v1 := m["k1"]
+    fmt.Println("v1:", v1)
+
+    v3 := m["k3"]
+    fmt.Println("v3:", v3)
+
+    fmt.Println("len:", len(m))
+
+    delete(m, "k2")
+    fmt.Println("map:", m)
+
+    clear(m)
+    fmt.Println("map:", m)
+
+    _, prs := m["k2"]
+    fmt.Println("prs:", prs)
+
+    n := map[string]int{"foo": 1, "bar": 2}
+    fmt.Println("map:", n)
+
+    n2 := map[string]int{"foo": 1, "bar": 2}
+    if maps.Equal(n, n2) {
+        fmt.Println("n == n2")
+    }
 }
 ```
