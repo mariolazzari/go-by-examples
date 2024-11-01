@@ -442,3 +442,91 @@ func main() {
     fmt.Println("1+2+3 =", res)
 }
 ```
+
+## Multiple Return Values
+
+Go has built-in support for multiple return values. This feature is used often in idiomatic Go, for example to return both result and error.
+The *(int, int)* in this function signature shows that the function returns 2 ints.
+If you only want a subset of the returned values, use the *blank identifier _*.
+
+```go
+package main
+
+import "fmt"
+
+func vals() (int, int) {
+	return 3, 7
+}
+
+func main() {
+
+	a, b := vals()
+	fmt.Println(a)
+	fmt.Println(b)
+
+	_, c := vals()
+	fmt.Println(c)
+}
+```
+
+## Variadic functions
+
+Variadic functions can be called with any number of trailing arguments. 
+Within the function, the type of nums is equivalent to []int. 
+We can call len(nums), iterate over it with range...
+
+```go
+package main
+
+import "fmt"
+
+func sum(nums ...int) {
+    fmt.Print(nums, " ")
+    total := 0
+
+    for _, num := range nums {
+        total += num
+    }
+    fmt.Println(total)
+}
+
+func main() {
+
+    sum(1, 2)
+    sum(1, 2, 3)
+
+    nums := []int{1, 2, 3, 4}
+    sum(nums...)
+}
+```
+
+## Closures
+
+
+Go supports anonymous functions, which can form closures. 
+
+```go
+package main
+
+import "fmt"
+
+func intSeq() func() int {
+    i := 0
+    return func() int {
+        i++
+        return i
+    }
+}
+
+func main() {
+
+    nextInt := intSeq()
+
+    fmt.Println(nextInt())
+    fmt.Println(nextInt())
+    fmt.Println(nextInt())
+
+    newInts := intSeq()
+    fmt.Println(newInts())
+}
+```
