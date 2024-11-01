@@ -563,3 +563,45 @@ func main() {
     fmt.Println(fib(7))
 }
 ```
+
+## Range over Built-in Types
+
+*range* iterates over elements in a variety of built-in data structures. 
+*range* on arrays and slices provides both the index and value for each entry. 
+*range* on map iterates over key/value pairs.
+*range* on strings iterates over Unicode code
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+
+    nums := []int{2, 3, 4}
+    sum := 0
+    for _, num := range nums {
+        sum += num
+    }
+    fmt.Println("sum:", sum)
+
+    for i, num := range nums {
+        if num == 3 {
+            fmt.Println("index:", i)
+        }
+    }
+
+    kvs := map[string]string{"a": "apple", "b": "banana"}
+    for k, v := range kvs {
+        fmt.Printf("%s -> %s\n", k, v)
+    }
+
+    for k := range kvs {
+        fmt.Println("key:", k)
+    }
+
+    for i, c := range "go" {
+        fmt.Println(i, c)
+    }
+}
+```
