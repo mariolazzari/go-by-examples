@@ -35,6 +35,7 @@ func main() {
 	}
 
 	whatAmI := func(i interface{}) {
+
 		switch t := i.(type) {
 		case bool:
 			fmt.Println("I'm a bool")
