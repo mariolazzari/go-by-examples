@@ -1084,4 +1084,16 @@ func main() {
 }
 ```
 
+## Errors
+
+In Go it’s idiomatic to communicate [errors](https://pkg.go.dev/errors) via an explicit, separate return [value](https://go.dev/blog/go1.13-errors). This contrasts with the exceptions.
+By convention, errors are the last return value and have type error, a built-in interface.
+A nil value in the error position indicates that there was no error.
+A sentinel error is a predeclared variable that is used to signify a specific error condition.
+*errors.Is* checks that a given error.
+
+```go
+
+```
+
 
