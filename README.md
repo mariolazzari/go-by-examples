@@ -891,3 +891,113 @@ func transition(s ServerState) ServerState {
     }
 }
 ```
+
+## Struct Embedding
+
+Go supports embedding of structs and interfaces to express a more seamless composition of types.
+A container embeds a base. An embedding looks like a field without a name.
+We have to initialize the embedding explicitly.
+We can access the base’s fields directly.
+
+```go
+package main
+
+import "fmt"
+
+type base struct {
+    num int
+}
+
+func (b base) describe() string {
+    return fmt.Sprintf("base with num=%v", b.num)
+}
+
+type container struct {
+    base
+    str string
+}
+
+func main() {
+
+    co := container{
+        base: base{
+            num: 1,
+        },
+        str: "some name",
+    }
+
+    fmt.Printf("co={num: %v, str: %v}\n", co.num, co.str)
+
+    fmt.Println("also num:", co.base.num)
+
+    fmt.Println("describe:", co.describe())
+
+    type describer interface {
+        describe() string
+    }
+
+    var d describer = co
+    fmt.Println("describer:", d.describe())
+}
+```
+
+## Generics
+
+Starting with version 1.18, Go has added support for generics.
+More info in [this](https://go.dev/blog/deconstructing-type-parameters) post and in stdlib [docs](https://pkg.go.dev/slices#Index)
+
+```go
+package main
+
+import "fmt"
+
+func SlicesIndex[S ~[]E, E comparable](s S, v E) int {
+    for i := range s {
+        if v == s[i] {
+            return i
+        }
+    }
+    return -1
+}
+
+type List[T any] struct {
+    head, tail *element[T]
+}
+
+type element[T any] struct {
+    next *element[T]
+    val  T
+}
+
+func (lst *List[T]) Push(v T) {
+    if lst.tail == nil {
+        lst.head = &element[T]{val: v}
+        lst.tail = lst.head
+    } else {
+        lst.tail.next = &element[T]{val: v}
+        lst.tail = lst.tail.next
+    }
+}
+
+func (lst *List[T]) AllElements() []T {
+    var elems []T
+    for e := lst.head; e != nil; e = e.next {
+        elems = append(elems, e.val)
+    }
+    return elems
+}
+
+func main() {
+    var s = []string{"foo", "bar", "zoo"}
+
+    fmt.Println("index of zoo:", SlicesIndex(s, "zoo"))
+
+    _ = SlicesIndex[[]string, string](s, "zoo")
+
+    lst := List[int]{}
+    lst.Push(10)
+    lst.Push(13)
+    lst.Push(23)
+    fmt.Println("list:", lst.AllElements())
+}
+```
