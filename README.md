@@ -605,3 +605,93 @@ func main() {
     }
 }
 ```
+
+## Pointers
+
+Go supports pointers, allowing you to pass references to values and records within your program.
+The *&i* syntax gives the memory address of i, i.e. a pointer to i.
+
+```go
+package main
+
+import "fmt"
+
+func zeroval(ival int) {
+    ival = 0
+}
+
+func zeroptr(iptr *int) {
+    *iptr = 0
+}
+
+func main() {
+    i := 1
+    fmt.Println("initial:", i)
+
+    zeroval(i)
+    fmt.Println("zeroval:", i)
+
+    zeroptr(&i)
+    fmt.Println("zeroptr:", i)
+
+    fmt.Println("pointer:", &i)
+}
+```
+
+```sh
+$ go run pointers.go
+initial: 1
+zeroval: 1
+zeroptr: 0
+pointer: 0x42131100
+```
+
+## Strings and Runes
+
+
+A Go string is a read-only slice of bytes. The language and the standard library treat strings specially - as containers of text encoded in UTF-8. In other languages, strings are made of “characters”. In Go, the concept of a character is called a rune - it’s an integer that represents a Unicode code point. [This Go blog post](https://go.dev/blog/strings) is a good introduction to the topic.
+
+```go
+package main
+
+import (
+    "fmt"
+    "unicode/utf8"
+)
+
+func main() {
+
+    const s = "สวัสดี"
+
+    fmt.Println("Len:", len(s))
+
+    for i := 0; i < len(s); i++ {
+        fmt.Printf("%x ", s[i])
+    }
+    fmt.Println()
+
+    fmt.Println("Rune count:", utf8.RuneCountInString(s))
+
+    for idx, runeValue := range s {
+        fmt.Printf("%#U starts at %d\n", runeValue, idx)
+    }
+
+    fmt.Println("\nUsing DecodeRuneInString")
+    for i, w := 0, 0; i < len(s); i += w {
+        runeValue, width := utf8.DecodeRuneInString(s[i:])
+        fmt.Printf("%#U starts at %d\n", runeValue, i)
+        w = width
+
+        examineRune(runeValue)
+    }
+}
+
+func examineRune(r rune) {
+
+    if r == 't' {
+        fmt.Println("found tee")
+    } else if r == 'ส' {
+        fmt.Println("found so sua")
+    }
+}
+```
