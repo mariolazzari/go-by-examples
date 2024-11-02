@@ -695,3 +695,199 @@ func examineRune(r rune) {
     }
 }
 ```
+
+## Structs
+
+Go’s structs are typed collections of fields. They’re useful for grouping data 
+Go is a *garbage collected language*; you can safely return a pointer to a local variable - it will only be cleaned up by the garbage collector when there are no active references to it.
+
+```go
+package main
+
+import "fmt"
+
+type person struct {
+	name string
+	age  int
+}
+
+func newPerson(name string) *person {
+
+	p := person{name: name}
+	p.age = 42
+	return &p
+}
+
+func main() {
+
+	fmt.Println(person{"Bob", 20})
+
+	fmt.Println(person{name: "Alice", age: 30})
+
+	fmt.Println(person{name: "Fred"})
+
+	fmt.Println(&person{name: "Ann", age: 40})
+
+	fmt.Println(newPerson("Jon"))
+
+	s := person{name: "Sean", age: 50}
+	fmt.Println(s.name)
+
+	sp := &s
+	fmt.Println(sp.age)
+
+	sp.age = 51
+	fmt.Println(sp.age)
+
+	dog := struct {
+		name   string
+		isGood bool
+	}{
+		"Rex",
+		true,
+	}
+	fmt.Println(dog)
+}
+```
+
+## Methods
+
+Go supports methods defined on struct types.
+Methods can be defined for either pointer or value receiver types. 
+Go automatically handles conversion between values and pointers for method calls. You may want to use a pointer receiver type to avoid copying on method calls or to allow the method to mutate the receiving struct.
+
+```go
+package main
+
+import "fmt"
+
+type rect struct {
+    width, height int
+}
+
+func (r *rect) area() int {
+    return r.width * r.height
+}
+
+func (r rect) perim() int {
+    return 2*r.width + 2*r.height
+}
+
+func main() {
+    r := rect{width: 10, height: 5}
+
+    fmt.Println("area: ", r.area())
+    fmt.Println("perim:", r.perim())
+
+    rp := &r
+    fmt.Println("area: ", rp.area())
+    fmt.Println("perim:", rp.perim())
+}
+```
+
+## Interfaces
+
+[Interfaces](https://jordanorelli.com/post/32665860244/how-to-use-interfaces-in-go) are named collections of method signatures.
+To implement an interface in Go, we just need to implement all the methods in the interface.
+
+```go
+package main
+
+import (
+    "fmt"
+    "math"
+)
+
+type geometry interface {
+    area() float64
+    perim() float64
+}
+
+type rect struct {
+    width, height float64
+}
+type circle struct {
+    radius float64
+}
+
+func (r rect) area() float64 {
+    return r.width * r.height
+}
+func (r rect) perim() float64 {
+    return 2*r.width + 2*r.height
+}
+
+func (c circle) area() float64 {
+    return math.Pi * c.radius * c.radius
+}
+func (c circle) perim() float64 {
+    return 2 * math.Pi * c.radius
+}
+
+func measure(g geometry) {
+    fmt.Println(g)
+    fmt.Println(g.area())
+    fmt.Println(g.perim())
+}
+
+func main() {
+    r := rect{width: 3, height: 4}
+    c := circle{radius: 5}
+
+    measure(r)
+    measure(c)
+}
+```
+
+## Enums
+
+An enum is a type that has a fixed number of possible values, each with a distinct name. 
+The special keyword [iota](https://go.dev/ref/spec#Iota) generates successive constant values automatically.
+
+```go
+package main
+
+import "fmt"
+
+type ServerState int
+
+const (
+    StateIdle ServerState = iota
+    StateConnected
+    StateError
+    StateRetrying
+)
+
+var stateName = map[ServerState]string{
+    StateIdle:      "idle",
+    StateConnected: "connected",
+    StateError:     "error",
+    StateRetrying:  "retrying",
+}
+
+func (ss ServerState) String() string {
+    return stateName[ss]
+}
+
+func main() {
+    ns := transition(StateIdle)
+    fmt.Println(ns)
+
+    ns2 := transition(ns)
+    fmt.Println(ns2)
+}
+
+func transition(s ServerState) ServerState {
+    switch s {
+    case StateIdle:
+        return StateConnected
+    case StateConnected, StateRetrying:
+
+        return StateIdle
+    case StateError:
+        return StateError
+    default:
+        panic(fmt.Errorf("unknown state: %s", s))
+    }
+}
+```
