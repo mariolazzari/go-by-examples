@@ -1,10 +1,14 @@
-# Go by examples
+# [Go by examples](https://gobyexample.com/)
 
-Official [site](https://gobyexample.com/)
+[Go](https://go.dev/) is an open source programming language designed for building scalable, secure and reliable software. Please read the [official documentation](https://go.dev/doc/tutorial/getting-started) to learn more.
 
-## Hello world
+_Go by Example_ is a hands-on introduction to Go using annotated example programs. Check out the [first example](https://gobyexample.com/hello-world) or browse the full list below.
 
-First program in Go.
+Unless stated otherwise, examples here assume the [latest major release Go](https://go.dev/doc/devel/release) and may use new language features. Try to upgrade to the latest version if something isn't working.
+
+## 1. Hello world
+
+Our first program will print the classic “hello world” message. Here’s the full source code.
 
 ```go
 package main
@@ -16,37 +20,59 @@ func main() {
 }
 ```
 
-```sh 
+To run the program, put the code in hello-world.go and use go run.
+
+```sh
 go run hello-world.go
+```
+
+Sometimes we’ll want to build our programs into binaries. We can do this using go build.
+
+```sh
 go build hello-world.go
 ```
 
-## Values
+We can then execute the built binary directly.
 
-Go has various *value types* including strings, integers, floats, booleans...
+```sh
+./hello-world
+```
+
+## 2. Values
+
+Go has various _value types_ including strings, integers, floats, booleans...
 Here are a few basic examples.
 
 ```go
-package main
-
-import "fmt"
-
 func main() {
-    fmt.Println("go" + "lang")
+	// Strings, which can be added together with +.
+	fmt.Println("go" + "lang")
 
-    fmt.Println("1+1 =", 1+1)
-    fmt.Println("7.0/3.0 =", 7.0/3.0)
+	// Integers and floats.
+	fmt.Println("1+1 =", 1+1)
+	fmt.Println("7.0/3.0 =", 7.0/3.0)
 
-    fmt.Println(true && false)
-    fmt.Println(true || false)
-    fmt.Println(!true)
+	// Booleans, with boolean operators as you’d expect.
+	fmt.Println(true && false)
+	fmt.Println(true || false)
+	fmt.Println(!true)
 }
 ```
 
-## Variables
+```sh
+$ go run values.go
+golang
+1+1 = 2
+7.0/3.0 = 2.3333333333333335
+false
+true
+false
+```
 
-In Go, *variables* are explicitly declared and used by the compiler to e.g. check type-correctness of function calls.
-The *:=* syntax is shorthand for declaring and initializing a variable, e.g. for var f string = "apple" in this case. This syntax is only available inside functions.
+## 3. Variables
+
+In Go, _variables_ are explicitly declared and used by the compiler to e.g. check type-correctness of function calls.
+The _:=_ syntax is shorthand for declaring and initializing a variable, e.g. for var f string = "apple" in this case. This syntax is only available inside functions.
 
 ```go
 package main
@@ -54,28 +80,43 @@ package main
 import "fmt"
 
 func main() {
+	// var declares 1 or more variables.
+	var a = "initial"
+	fmt.Println(a)
 
-    var a = "initial"
-    fmt.Println(a)
+	// You can declare multiple variables at once.
+	var b, c int = 1, 2
+	fmt.Println(b, c)
 
-    var b, c int = 1, 2
-    fmt.Println(b, c)
+	// Go will infer the type of initialized variables.
+	var d = true
+	fmt.Println(d)
 
-    var d = true
-    fmt.Println(d)
+	// Variables declared without a corresponding initialization are zero-valued.
+	// For example, the zero value for an int is 0.
+	var e int
+	fmt.Println(e)
 
-    var e int
-    fmt.Println(e)
-
-    f := "apple"
-    fmt.Println(f)
+	// The := syntax is shorthand for declaring and initializing a variable,
+	// e.g. for var f string = "apple" in this case.
+	// This syntax is only available inside functions.
+	f := "apple"
+	fmt.Println(f)
 }
 ```
 
+```sh
+$ go run variables.go
+initial
+1 2
+true
+0
+apple
+```
 
-## Constants
+## 4. Constants
 
-Go supports *constants* of character, string, boolean, and numeric values.
+Go supports _constants_ of character, string, boolean, and numeric values.
 
 ```go
 package main
@@ -85,25 +126,31 @@ import (
     "math"
 )
 
+// const declares a constant value.
 const s string = "constant"
 
 func main() {
-    fmt.Println(s)
+	fmt.Println(s)
 
-    const n = 500000000
+	// A const statement can also appear inside a function body.
+	const n = 500000000
 
-    const d = 3e20 / n
-    fmt.Println(d)
+	// Constant expressions perform arithmetic with arbitrary precision.
+	const d = 3e20 / n
+	fmt.Println(d)
 
-    fmt.Println(int64(d))
+	// A numeric constant has no type until it’s given one, such as by an explicit conversion.
+	fmt.Println(int64(d))
 
-    fmt.Println(math.Sin(n))
+	// A number can be given a type by using it in a context that requires one, such as a variable assignment or function call.
+	// For example, here math.Sin expects a float64.
+	fmt.Println(math.Sin(n))
 }
 ```
 
-## For
+## 5. For
 
-*for* is Go’s *only looping construct*. 
+_for_ is Go’s _only looping construct_.
 Here are some basic types of for loops.
 
 ```go
@@ -112,44 +159,44 @@ package main
 import "fmt"
 
 func main() {
-    // The most basic type, with a single condition.
-    i := 1
-    for i <= 3 {
-        fmt.Println(i)
-        i = i + 1
-    }
+	// The most basic type, with a single condition.
+	i := 1
+	for i <= 3 {
+		fmt.Println(i)
+		i = i + 1
+	}
 
-    // classic for
-    for j := 0; j < 3; j++ {
-        fmt.Println(j)
-    }
+	// A classic initial/condition/after for loop.
+	for j := 0; j < 3; j++ {
+		fmt.Println(j)
+	}
 
-    // range
-    for i := range 3 {
-        fmt.Println("range", i)
-    }
+	// Another way of accomplishing the basic “do this N times” iteration is range over an integer.
+	for i := range 3 {
+		fmt.Println("range", i)
+	}
 
-    // for without a condition will loop repeatedly until you break out of the loop 
-    // or return from the enclosing function.
-    for {
-        fmt.Println("loop")
-        break
-    }
+	//for without a condition will loop repeatedly until you break out of the loop
+	// or return from the enclosing function.
+	for {
+		fmt.Println("loop")
+		break
+	}
 
-    // continue to the next iteration 
-    for n := range 6 {
-        if n%2 == 0 {
-            continue
-        }
-        fmt.Println(n)
-    }
+	// You can also continue to the next iteration of the loop.
+	for n := range 6 {
+		if n%2 == 0 {
+			continue
+		}
+		fmt.Println(n)
+	}
 }
 ```
 
-## If
+## 6. If
 
 Branching with if and else in Go is straight-forward.
-You don’t need parentheses around conditions 
+You don’t need parentheses around conditions
 There is no ternary if.
 
 ```go
@@ -189,8 +236,8 @@ func main() {
 
 Switch statements express conditionals across many branches.
 You can use commas to separate multiple expressions in the same case statement.
-*switch* without an expression is an alternate way to express *if/else*
-A *type switch* compares types instead of values
+_switch_ without an expression is an alternate way to express _if/else_
+A _type switch_ compares types instead of values
 
 ```go
 package main
@@ -246,10 +293,10 @@ func main() {
 
 ## Arrays
 
-In Go, an array is a numbered sequence of elements of a specific length. 
+In Go, an array is a numbered sequence of elements of a specific length.
 In typical Go code, slices are much more common.
-You can also have the compiler count the number of elements for you with *...*
-The builtin *len* returns the length of an array.
+You can also have the compiler count the number of elements for you with _..._
+The builtin _len_ returns the length of an array.
 
 ```go
 package main
@@ -294,11 +341,11 @@ func main() {
 
 ## Slices
 
-*Slices* are an important data type in Go, giving a more powerful interface to sequences than arrays.
-To create an empty slice with non-zero length, use the builtin *make*.
+_Slices_ are an important data type in Go, giving a more powerful interface to sequences than arrays.
+To create an empty slice with non-zero length, use the builtin _make_.
 By default a new slice’s capacity is equal to its length; if we know the slice is going to grow ahead of time, it’s possible to pass a capacity explicitly.
-*len* returns the length of the slice
-The slices package contains a number of useful utility [functions](https://go.dev/blog/slices-intro). 
+_len_ returns the length of the slice
+The slices package contains a number of useful utility [functions](https://go.dev/blog/slices-intro).
 
 ```go
 package main
@@ -367,9 +414,9 @@ Maps are Go’s built-in associative data type (hashes / dictionaries).
 Set key/value pairs using typical name[key] = val syntax.
 Get a value for a key with name[key].
 If the key doesn’t exist, the [zero value](https://go.dev/ref/spec#The_zero_value)
-The builtin *len* returns the number of key/value pairs.
-The builtin *delete* removes key/value pairs from a map.
-To remove all key/value pairs from a map, use the *clear* builtin.
+The builtin _len_ returns the number of key/value pairs.
+The builtin _delete_ removes key/value pairs from a map.
+To remove all key/value pairs from a map, use the _clear_ builtin.
 
 ```go
 package main
@@ -446,8 +493,8 @@ func main() {
 ## Multiple Return Values
 
 Go has built-in support for multiple return values. This feature is used often in idiomatic Go, for example to return both result and error.
-The *(int, int)* in this function signature shows that the function returns 2 ints.
-If you only want a subset of the returned values, use the *blank identifier _*.
+The _(int, int)_ in this function signature shows that the function returns 2 ints.
+If you only want a subset of the returned values, use the \_blank identifier \_\_.
 
 ```go
 package main
@@ -471,8 +518,8 @@ func main() {
 
 ## Variadic functions
 
-Variadic functions can be called with any number of trailing arguments. 
-Within the function, the type of nums is equivalent to []int. 
+Variadic functions can be called with any number of trailing arguments.
+Within the function, the type of nums is equivalent to []int.
 We can call len(nums), iterate over it with range...
 
 ```go
@@ -502,8 +549,7 @@ func main() {
 
 ## Closures
 
-
-Go supports anonymous functions, which can form closures. 
+Go supports anonymous functions, which can form closures.
 
 ```go
 package main
@@ -566,10 +612,10 @@ func main() {
 
 ## Range over Built-in Types
 
-*range* iterates over elements in a variety of built-in data structures. 
-*range* on arrays and slices provides both the index and value for each entry. 
-*range* on map iterates over key/value pairs.
-*range* on strings iterates over Unicode code
+_range_ iterates over elements in a variety of built-in data structures.
+_range_ on arrays and slices provides both the index and value for each entry.
+_range_ on map iterates over key/value pairs.
+_range_ on strings iterates over Unicode code
 
 ```go
 package main
@@ -609,7 +655,7 @@ func main() {
 ## Pointers
 
 Go supports pointers, allowing you to pass references to values and records within your program.
-The *&i* syntax gives the memory address of i, i.e. a pointer to i.
+The _&i_ syntax gives the memory address of i, i.e. a pointer to i.
 
 ```go
 package main
@@ -647,7 +693,6 @@ pointer: 0x42131100
 ```
 
 ## Strings and Runes
-
 
 A Go string is a read-only slice of bytes. The language and the standard library treat strings specially - as containers of text encoded in UTF-8. In other languages, strings are made of “characters”. In Go, the concept of a character is called a rune - it’s an integer that represents a Unicode code point. [This Go blog post](https://go.dev/blog/strings) is a good introduction to the topic.
 
@@ -698,8 +743,8 @@ func examineRune(r rune) {
 
 ## Structs
 
-Go’s structs are typed collections of fields. They’re useful for grouping data 
-Go is a *garbage collected language*; you can safely return a pointer to a local variable - it will only be cleaned up by the garbage collector when there are no active references to it.
+Go’s structs are typed collections of fields. They’re useful for grouping data
+Go is a _garbage collected language_; you can safely return a pointer to a local variable - it will only be cleaned up by the garbage collector when there are no active references to it.
 
 ```go
 package main
@@ -753,7 +798,7 @@ func main() {
 ## Methods
 
 Go supports methods defined on struct types.
-Methods can be defined for either pointer or value receiver types. 
+Methods can be defined for either pointer or value receiver types.
 Go automatically handles conversion between values and pointers for method calls. You may want to use a pointer receiver type to avoid copying on method calls or to allow the method to mutate the receiving struct.
 
 ```go
@@ -841,7 +886,7 @@ func main() {
 
 ## Enums
 
-An enum is a type that has a fixed number of possible values, each with a distinct name. 
+An enum is a type that has a fixed number of possible values, each with a distinct name.
 The special keyword [iota](https://go.dev/ref/spec#Iota) generates successive constant values automatically.
 
 ```go
@@ -1004,10 +1049,9 @@ func main() {
 
 ## Range over Iterators
 
-
 Starting with version 1.23, Go has added support for [iterators](https://go.dev/blog/range-functions), which lets us range over pretty much anything.
 The iterator function takes another function as a parameter, called yield by convention.
-Packages like [slices](https://pkg.go.dev/slices) have a number of useful functions to work with iterators. 
+Packages like [slices](https://pkg.go.dev/slices) have a number of useful functions to work with iterators.
 
 ```go
 package main
@@ -1090,7 +1134,7 @@ In Go it’s idiomatic to communicate [errors](https://pkg.go.dev/errors) via an
 By convention, errors are the last return value and have type error, a built-in interface.
 A nil value in the error position indicates that there was no error.
 A sentinel error is a predeclared variable that is used to signify a specific error condition.
-*errors.Is* checks that a given error.
+_errors.Is_ checks that a given error.
 
 ```go
 package main
@@ -1149,5 +1193,3 @@ func main() {
 	}
 }
 ```
-
-

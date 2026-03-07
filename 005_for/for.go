@@ -10,24 +10,24 @@ func main() {
 		i = i + 1
 	}
 
-	// classic for
+	// A classic initial/condition/after for loop.
 	for j := 0; j < 3; j++ {
 		fmt.Println(j)
 	}
 
-	// range
+	// Another way of accomplishing the basic “do this N times” iteration is range over an integer.
 	for i := range 3 {
 		fmt.Println("range", i)
 	}
 
-	// for without a condition will loop repeatedly until you break out of the loop
+	//for without a condition will loop repeatedly until you break out of the loop
 	// or return from the enclosing function.
 	for {
 		fmt.Println("loop")
 		break
 	}
 
-	// continue to the next iteration
+	// You can also continue to the next iteration of the loop.
 	for n := range 6 {
 		if n%2 == 0 {
 			continue
