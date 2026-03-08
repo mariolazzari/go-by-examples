@@ -148,6 +148,15 @@ func main() {
 }
 ```
 
+```sh
+
+$ go run constant.go
+constant
+6e+11
+600000000000
+-0.28470407323754404
+```
+
 ## 5. For
 
 _for_ is Go’s _only looping construct_.
@@ -196,8 +205,9 @@ func main() {
 ## 6. If
 
 Branching with if and else in Go is straight-forward.
-You don’t need parentheses around conditions
-There is no ternary if.
+
+- You don’t need parentheses around conditions
+- There is no ternary if.
 
 ```go
 package main
@@ -205,23 +215,25 @@ package main
 import "fmt"
 
 func main() {
-
+	// Here’s a basic example.
 	if 7%2 == 0 {
 		fmt.Println("7 is even")
 	} else {
 		fmt.Println("7 is odd")
 	}
 
+	// You can have an if statement without an else.
 	if 8%4 == 0 {
 		fmt.Println("8 is divisible by 4")
 	}
 
+	// Logical operators like && and || are often useful in conditions.
 	if 8%2 == 0 || 7%2 == 0 {
 		fmt.Println("either 8 or 7 are even")
 	}
 
-	// A statement can precede conditionals.
-	// Any variables declared in this statement are available in the current and all subsequent branches.
+	// A statement can precede conditionals;
+	// any variables declared in this statement are available in the current and all subsequent branches.
 	if num := 9; num < 0 {
 		fmt.Println(num, "is negative")
 	} else if num < 10 {
@@ -232,12 +244,27 @@ func main() {
 }
 ```
 
-## Switch
+```sh
+
+$ go run for.go
+1
+2
+3
+0
+1
+2
+range 0
+range 1
+range 2
+loop
+1
+3
+5
+```
+
+## 7. Switch
 
 Switch statements express conditionals across many branches.
-You can use commas to separate multiple expressions in the same case statement.
-_switch_ without an expression is an alternate way to express _if/else_
-A _type switch_ compares types instead of values
 
 ```go
 package main
@@ -289,6 +316,17 @@ func main() {
     whatAmI(1)
     whatAmI("hey")
 }
+```
+
+```sh
+
+$ go run switch.go
+Write 2 as two
+It's a weekday
+It's after noon
+I'm a bool
+I'm an int
+Don't know type string
 ```
 
 ## Arrays
