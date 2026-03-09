@@ -329,12 +329,10 @@ I'm an int
 Don't know type string
 ```
 
-## Arrays
+## 8. Arrays
 
 In Go, an array is a numbered sequence of elements of a specific length.
-In typical Go code, slices are much more common.
-You can also have the compiler count the number of elements for you with _..._
-The builtin _len_ returns the length of an array.
+In typical Go code, _slices_ are much more common; arrays are useful in some special scenarios.
 
 ```go
 package main
@@ -343,6 +341,9 @@ import "fmt"
 
 func main() {
 
+// Here we create an array a that will hold exactly 5 ints.
+// The type of elements and length are both part of the array’s type.
+// By default an array is zero-valued, which for ints means 0s.
 	var a [5]int
 	fmt.Println("emp:", a)
 
