@@ -378,127 +378,194 @@ func main() {
 }
 ```
 
+```sh
+$ go run arrays.go
+emp: [0 0 0 0 0]
+set: [0 0 0 0 100]
+get: 100
+len: 5
+dcl: [1 2 3 4 5]
+dcl: [1 2 3 4 5]
+idx: [100 0 0 400 500]
+2d:  [[0 1 2] [1 2 3]]
+2d:  [[1 2 3] [1 2 3]]
+```
+
 ## Slices
 
 _Slices_ are an important data type in Go, giving a more powerful interface to sequences than arrays.
-To create an empty slice with non-zero length, use the builtin _make_.
-By default a new slice’s capacity is equal to its length; if we know the slice is going to grow ahead of time, it’s possible to pass a capacity explicitly.
-_len_ returns the length of the slice
-The slices package contains a number of useful utility [functions](https://go.dev/blog/slices-intro).
+Check out [this great blog post](https://go.dev/blog/slices-intro) by the Go team for more details on the design and implementation of slices in Go.
 
 ```go
 package main
 
 import (
-    "fmt"
-    "slices"
+	"fmt"
+	"slices"
 )
 
 func main() {
+	// Unlike arrays, slices are typed only by the elements they contain (not the number of elements).
+	// An uninitialized slice equals to nil and has length 0.
+	var s []string
+	fmt.Println("uninit:", s, s == nil, len(s) == 0)
 
-    var s []string
-    fmt.Println("uninit:", s, s == nil, len(s) == 0)
+	// To create a slice with non-zero length, use the builtin make.
+	// Here we make a slice of strings of length 3 (initially zero-valued).
+	// By default a new slice’s capacity is equal to its length;
+	// if we know the slice is going to grow ahead of time,
+	// it’s possible to pass a capacity explicitly as an additional parameter to make.
+	s = make([]string, 3)
+	fmt.Println("emp:", s, "len:", len(s), "cap:", cap(s))
 
-    s = make([]string, 3)
-    fmt.Println("emp:", s, "len:", len(s), "cap:", cap(s))
+	// We can set and get just like with arrays.
+	s[0] = "a"
+	s[1] = "b"
+	s[2] = "c"
+	fmt.Println("set:", s)
+	fmt.Println("get:", s[2])
 
-    s[0] = "a"
-    s[1] = "b"
-    s[2] = "c"
-    fmt.Println("set:", s)
-    fmt.Println("get:", s[2])
+	// len returns the length of the slice as expected.
+	fmt.Println("len:", len(s))
 
-    fmt.Println("len:", len(s))
+	// In addition to these basic operations, slices support several more that make them richer than arrays.
+	// One is the builtin append, which returns a slice containing one or more new values.
+	// Note that we need to accept a return value from append as we may get a new slice value.
+	s = append(s, "d")
+	s = append(s, "e", "f")
+	fmt.Println("apd:", s)
 
-    s = append(s, "d")
-    s = append(s, "e", "f")
-    fmt.Println("apd:", s)
+	// Slices can also be copy’d. Here we create an empty slice c of the same length as s and copy into c from s.
+	c := make([]string, len(s))
+	copy(c, s)
+	fmt.Println("cpy:", c)
 
-    c := make([]string, len(s))
-    copy(c, s)
-    fmt.Println("cpy:", c)
+	// Slices support a “slice” operator with the syntax slice[low:high].
+	// For example, this gets a slice of the elements s[2], s[3], and s[4].
+	l := s[2:5]
+	fmt.Println("sl1:", l)
 
-    l := s[2:5]
-    fmt.Println("sl1:", l)
+	// This slices up to (but excluding) s[5].
+	l = s[:5]
+	fmt.Println("sl2:", l)
 
-    l = s[:5]
-    fmt.Println("sl2:", l)
+	// And this slices up from (and including) s[2].
+	l = s[2:]
+	fmt.Println("sl3:", l)
 
-    l = s[2:]
-    fmt.Println("sl3:", l)
+	// We can declare and initialize a variable for slice in a single line as well.
+	t := []string{"g", "h", "i"}
+	fmt.Println("dcl:", t)
 
-    t := []string{"g", "h", "i"}
-    fmt.Println("dcl:", t)
+	// The slices package contains a number of useful utility functions for slices.
+	t2 := []string{"g", "h", "i"}
+	if slices.Equal(t, t2) {
+		fmt.Println("t == t2")
+	}
 
-    t2 := []string{"g", "h", "i"}
-    if slices.Equal(t, t2) {
-        fmt.Println("t == t2")
-    }
-
-    twoD := make([][]int, 3)
-    for i := 0; i < 3; i++ {
-        innerLen := i + 1
-        twoD[i] = make([]int, innerLen)
-        for j := 0; j < innerLen; j++ {
-            twoD[i][j] = i + j
-        }
-    }
-    fmt.Println("2d: ", twoD)
+	// Slices can be composed into multi-dimensional data structures.
+	// The length of the inner slices can vary, unlike with multi-dimensional arrays.
+	twoD := make([][]int, 3)
+	for i := range 3 {
+		innerLen := i + 1
+		twoD[i] = make([]int, innerLen)
+		for j := 0; j < innerLen; j++ {
+			twoD[i][j] = i + j
+		}
+	}
+	fmt.Println("2d: ", twoD)
 }
+```
+
+```sh
+go run slices.go
+uninit: [] true true
+emp: [  ] len: 3 cap: 3
+set: [a b c]
+get: c
+len: 3
+apd: [a b c d e f]
+cpy: [a b c d e f]
+sl1: [c d e]
+sl2: [a b c d e]
+sl3: [c d e f]
+dcl: [g h i]
+t == t2
+2d:  [[0] [1 2] [2 3 4]]
 ```
 
 ## Maps
 
-Maps are Go’s built-in associative data type (hashes / dictionaries).
-Set key/value pairs using typical name[key] = val syntax.
-Get a value for a key with name[key].
+Maps are Go’s built-in [associative data type](https://en.wikipedia.org/wiki/Associative_array) (hashes / dictionaries).
 If the key doesn’t exist, the [zero value](https://go.dev/ref/spec#The_zero_value)
-The builtin _len_ returns the number of key/value pairs.
-The builtin _delete_ removes key/value pairs from a map.
-To remove all key/value pairs from a map, use the _clear_ builtin.
 
 ```go
 package main
 
 import (
-    "fmt"
-    "maps"
+	"fmt"
+	"maps"
 )
 
 func main() {
+	// To create an empty map, use the builtin make: make(map[key-type]val-type).
+	m := make(map[string]int)
 
-    m := make(map[string]int)
+	// Set key/value pairs using typical name[key] = val syntax.
+	m["k1"] = 7
+	m["k2"] = 13
 
-    m["k1"] = 7
-    m["k2"] = 13
+	// Printing a map with e.g. fmt.Println will show all of its key/value pairs.
+	fmt.Println("map:", m)
 
-    fmt.Println("map:", m)
+	// Get a value for a key with name[key].
+	v1 := m["k1"]
+	fmt.Println("v1:", v1)
 
-    v1 := m["k1"]
-    fmt.Println("v1:", v1)
+	// If the key doesn’t exist, the zero value of the value type is returned.
+	v3 := m["k3"]
+	fmt.Println("v3:", v3)
 
-    v3 := m["k3"]
-    fmt.Println("v3:", v3)
+	// The builtin len returns the number of key/value pairs when called on a map.
+	fmt.Println("len:", len(m))
 
-    fmt.Println("len:", len(m))
+	// The builtin delete removes key/value pairs from a map.
+	delete(m, "k2")
+	fmt.Println("map:", m)
 
-    delete(m, "k2")
-    fmt.Println("map:", m)
+	// To remove all key/value pairs from a map, use the clear builtin.
+	clear(m)
+	fmt.Println("map:", m)
 
-    clear(m)
-    fmt.Println("map:", m)
+	// The optional second return value when getting a value from a map indicates if the key was present in the map.
+	// This can be used to disambiguate between missing keys and keys with zero values like 0 or "".
+	// Here we didn’t need the value itself, so we ignored it with the blank identifier _.
+	_, prs := m["k2"]
+	fmt.Println("prs:", prs)
 
-    _, prs := m["k2"]
-    fmt.Println("prs:", prs)
+	// You can also declare and initialize a new map in the same line with this syntax.
+	n := map[string]int{"foo": 1, "bar": 2}
+	fmt.Println("map:", n)
 
-    n := map[string]int{"foo": 1, "bar": 2}
-    fmt.Println("map:", n)
-
-    n2 := map[string]int{"foo": 1, "bar": 2}
-    if maps.Equal(n, n2) {
-        fmt.Println("n == n2")
-    }
+	// The maps package contains a number of useful utility functions for maps.
+	n2 := map[string]int{"foo": 1, "bar": 2}
+	if maps.Equal(n, n2) {
+		fmt.Println("n == n2")
+	}
 }
+```
+
+```sh
+go run maps.go
+map: map[k1:7 k2:13]
+v1: 7
+v3: 0
+len: 2
+map: map[k1:7]
+map: map[]
+prs: false
+map: map[bar:2 foo:1]
+n == n2
 ```
 
 ## Functions
