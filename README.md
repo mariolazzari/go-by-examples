@@ -391,7 +391,7 @@ idx: [100 0 0 400 500]
 2d:  [[1 2 3] [1 2 3]]
 ```
 
-## Slices
+## 9. Slices
 
 _Slices_ are an important data type in Go, giving a more powerful interface to sequences than arrays.
 Check out [this great blog post](https://go.dev/blog/slices-intro) by the Go team for more details on the design and implementation of slices in Go.
@@ -494,7 +494,7 @@ t == t2
 2d:  [[0] [1 2] [2 3 4]]
 ```
 
-## Maps
+## 10. Maps
 
 Maps are Go’s built-in [associative data type](https://en.wikipedia.org/wiki/Associative_array) (hashes / dictionaries).
 If the key doesn’t exist, the [zero value](https://go.dev/ref/spec#The_zero_value)
@@ -568,32 +568,42 @@ map: map[bar:2 foo:1]
 n == n2
 ```
 
-## Functions
+## 11. Functions
 
-Go requires explicit returns: it won’t automatically return the value of the last expression.
-When you have multiple consecutive parameters of the same type, you may omit the type name.
+_Functions_ are central in Go. We’ll learn about functions with a few different examples.
 
 ```go
 package main
 
 import "fmt"
 
+// Here’s a function that takes two ints and returns their sum as an int.
 func plus(a int, b int) int {
-    return a + b
+	// Go requires explicit returns, i.e.
+	// it won’t automatically return the value of the last expression.
+	return a + b
 }
 
+// When you have multiple consecutive parameters of the same type,
+// you may omit the type name for the like-typed parameters up to the final parameter that declares the type.
 func plusPlus(a, b, c int) int {
-    return a + b + c
+	return a + b + c
 }
 
 func main() {
+	// Call a function just as you’d expect, with name(args).
+	res := plus(1, 2)
+	fmt.Println("1+2 =", res)
 
-    res := plus(1, 2)
-    fmt.Println("1+2 =", res)
-
-    res = plusPlus(1, 2, 3)
-    fmt.Println("1+2+3 =", res)
+	res = plusPlus(1, 2, 3)
+	fmt.Println("1+2+3 =", res)
 }
+```
+
+```sh
+go run functions.go
+1+2 = 3
+1+2+3 = 6
 ```
 
 ## Multiple Return Values
