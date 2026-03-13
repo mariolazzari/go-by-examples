@@ -606,124 +606,166 @@ go run functions.go
 1+2+3 = 6
 ```
 
-## Multiple Return Values
+## 12. Multiple Return Values
 
-Go has built-in support for multiple return values. This feature is used often in idiomatic Go, for example to return both result and error.
-The _(int, int)_ in this function signature shows that the function returns 2 ints.
-If you only want a subset of the returned values, use the \_blank identifier \_\_.
+Go has built-in support for *multiple return values*. 
+This feature is used often in idiomatic Go, for example to return both result and error.
 
 ```go
 package main
 
 import "fmt"
 
+// The (int, int) in this function signature shows that the function returns 2 ints.
 func vals() (int, int) {
 	return 3, 7
 }
 
 func main() {
-
+	// Here we use the 2 different return values from the call with multiple assignment.
 	a, b := vals()
 	fmt.Println(a)
 	fmt.Println(b)
 
+	// If you only want a subset of the returned values, use the blank identifier _.
 	_, c := vals()
 	fmt.Println(c)
 }
 ```
 
-## Variadic functions
+```sh
+go run multiple-return-values.go
+3
+7
+7
+```
 
-Variadic functions can be called with any number of trailing arguments.
-Within the function, the type of nums is equivalent to []int.
-We can call len(nums), iterate over it with range...
+## 13. Variadic functions
+
+[Variadic functions](https://en.wikipedia.org/wiki/Variadic_function) can be called with any number of trailing arguments.
+For example, fmt.Println is a common variadic function.
 
 ```go
 package main
 
 import "fmt"
 
+// Here’s a function that will take an arbitrary number of ints as arguments.
 func sum(nums ...int) {
-    fmt.Print(nums, " ")
-    total := 0
+	fmt.Print(nums, " ")
+	total := 0
 
-    for _, num := range nums {
-        total += num
-    }
-    fmt.Println(total)
+	// Within the function, the type of nums is equivalent to []int.
+	// We can call len(nums), iterate over it with range, etc.
+	for _, num := range nums {
+		total += num
+	}
+	fmt.Println(total)
 }
 
 func main() {
+	// Variadic functions can be called in the usual way with individual arguments.
+	sum(1, 2)
+	sum(1, 2, 3)
 
-    sum(1, 2)
-    sum(1, 2, 3)
-
-    nums := []int{1, 2, 3, 4}
-    sum(nums...)
+	// If you already have multiple args in a slice, apply them to a variadic function using func(slice...) like this.
+	nums := []int{1, 2, 3, 4}
+	sum(nums...)
 }
 ```
 
-## Closures
+```sh
+go run variadic-functions.go 
+[1 2] 3
+[1 2 3] 6
+[1 2 3 4] 10
+```
 
-Go supports anonymous functions, which can form closures.
+## 14. Closures
+
+Go supports [anonymous functions](https://en.wikipedia.org/wiki/Anonymous_function), which can form [closures](https://en.wikipedia.org/wiki/Closure_(computer_programming)). 
+Anonymous functions are useful when you want to define a function inline without having to name it.
 
 ```go
 package main
 
 import "fmt"
 
+// This function intSeq returns another function, which we define anonymously in the body of intSeq.
+// The returned function closes over the variable i to form a closure.
 func intSeq() func() int {
-    i := 0
-    return func() int {
-        i++
-        return i
-    }
+	i := 0
+	return func() int {
+		i++
+		return i
+	}
 }
 
 func main() {
+	// We call intSeq, assigning the result (a function) to nextInt.
+	// This function value captures its own i value, which will be updated each time we call nextInt.
+	nextInt := intSeq()
 
-    nextInt := intSeq()
+	// See the effect of the closure by calling nextInt a few times.
+	fmt.Println(nextInt())
+	fmt.Println(nextInt())
+	fmt.Println(nextInt())
 
-    fmt.Println(nextInt())
-    fmt.Println(nextInt())
-    fmt.Println(nextInt())
-
-    newInts := intSeq()
-    fmt.Println(newInts())
+	// To confirm that the state is unique to that particular function, create and test a new one.
+	newInts := intSeq()
+	fmt.Println(newInts())
 }
 ```
 
-## Recursion
+```sh
+go run closures.go
+1
+2
+3
+1
+```
 
-Anonymous functions can also be recursive, but this requires explicitly declaring a variable with var to store the function before it’s defined.
+## 15. Recursion
+
+Go supports [recursive functions](https://en.wikipedia.org/wiki/Recursion_(computer_science)). Here’s a classic example.
 
 ```go
 package main
 
 import "fmt"
 
+// This fact function calls itself until it reaches the base case of fact(0).
 func fact(n int) int {
-    if n == 0 {
-        return 1
-    }
-    return n * fact(n-1)
+	if n == 0 {
+		return 1
+	}
+	return n * fact(n-1)
 }
 
 func main() {
-    fmt.Println(fact(7))
+	fmt.Println(fact(7))
 
-    var fib func(n int) int
+	// Anonymous functions can also be recursive,
+	// but this requires explicitly declaring a variable with var to store the function before it’s defined.
+	var fib func(n int) int
 
-    fib = func(n int) int {
-        if n < 2 {
-            return n
-        }
+	fib = func(n int) int {
+		if n < 2 {
+			return n
+		}
 
-        return fib(n-1) + fib(n-2)
-    }
+		// Since fib was previously declared in main, Go knows which function to call with fib here.
+		return fib(n-1) + fib(n-2)
+	}
 
-    fmt.Println(fib(7))
+	fmt.Println(fib(7))
 }
+```
+
+```sh
+go run recursion.go 
+5040
+13
 ```
 
 ## Range over Built-in Types
