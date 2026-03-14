@@ -1575,3 +1575,158 @@ We should buy new tea!
 Tea is ready!
 Now it is dark.
 ```
+
+## 27.Custom Errors
+
+It’s possible to define custom error types by implementing the Error() method on them. Here’s a variant on the example above that uses a custom type to explicitly represent an argument error.
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+// A custom error type usually has the suffix “Error”.
+type argError struct {
+	arg     int
+	message string
+}
+
+// Adding this Error method makes argError implement the error interface.
+func (e *argError) Error() string {
+	return fmt.Sprintf("%d - %s", e.arg, e.message)
+}
+
+func f(arg int) (int, error) {
+	if arg == 42 {
+		// Return our custom error.
+		return -1, &argError{arg, "can't work with it"}
+	}
+	return arg + 3, nil
+}
+
+func main() {
+	// errors.AsType is a more advanced version of errors.Is.
+	// It checks that a given error (or any error in its chain) matches a specific error type
+	// and converts to a value of that type, also returning true.
+	// If there’s no match, the second return value is false.
+	_, err := f(42)
+	if ae, ok := errors.AsType[*argError](err); ok {
+		fmt.Println(ae.arg)
+		fmt.Println(ae.message)
+	} else {
+		fmt.Println("err doesn't match argError")
+	}
+}
+```
+
+```sh
+go run custom-errors.go
+42
+can't work with it
+```
+
+## 28.Goroutines
+
+A goroutine is a lightweight thread of execution.
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func f(from string) {
+	for i := range 3 {
+		fmt.Println(from, ":", i)
+	}
+}
+
+func main() {
+	// Suppose we have a function call f(s).
+	// Here’s how we’d call that in the usual way, running it synchronously.
+	f("direct")
+
+	// To invoke this function in a goroutine, use go f(s).
+	// This new goroutine will execute concurrently with the calling one.
+	go f("goroutine")
+
+	// You can also start a goroutine for an anonymous function call.
+	go func(msg string) {
+		fmt.Println(msg)
+	}("going")
+
+	// Our two function calls are running asynchronously in separate goroutines now.
+	// Wait for them to finish (for a more robust approach, use a WaitGroup).
+	time.Sleep(time.Second)
+	fmt.Println("done")
+}
+```
+
+When we run this program, we see the output of the blocking call first, then the output of the two goroutines. The goroutines’ output may be interleaved, because goroutines are being run concurrently by the Go runtime.
+
+```sh
+go run goroutines.go
+direct : 0
+direct : 1
+direct : 2
+goroutine : 0
+going
+goroutine : 1
+goroutine : 2
+done
+```
+
+## 29.Channels
+
+_Channels_ are the pipes that connect concurrent goroutines.
+You can send values into channels from one goroutine and receive those values into another goroutine.
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func f(from string) {
+	for i := range 3 {
+		fmt.Println(from, ":", i)
+	}
+}
+
+func main() {
+	// Suppose we have a function call f(s).
+	// Here’s how we’d call that in the usual way, running it synchronously.
+	f("direct")
+
+	// To invoke this function in a goroutine, use go f(s).
+	// This new goroutine will execute concurrently with the calling one.
+	go f("goroutine")
+
+	// You can also start a goroutine for an anonymous function call.
+	go func(msg string) {
+		fmt.Println(msg)
+	}("going")
+
+	// Our two function calls are running asynchronously in separate goroutines now.
+	// Wait for them to finish (for a more robust approach, use a WaitGroup).
+	time.Sleep(time.Second)
+	fmt.Println("done")
+}
+```
+
+When we run the program the "ping" message is successfully passed from one goroutine to another via our channel.
+
+```sh
+go run channels.go
+ping
+```
+
+By default sends and receives block until both the sender and receiver are ready.
+This property allowed us to wait at the end of our program for the "ping" message without having to use any other synchronization.
