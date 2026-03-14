@@ -1291,155 +1291,211 @@ func main() {
 }
 ```
 
-## Generics
+```sh
+go run struct-embedding.go
+co={num: 1, str: some name}
+also num: 1
+describe: base with num=1
+describer: base with num=1
+```
 
-Starting with version 1.18, Go has added support for generics.
-More info in [this](https://go.dev/blog/deconstructing-type-parameters) post and in stdlib [docs](https://pkg.go.dev/slices#Index)
+## 24.Generics
+
+Starting with version 1.18, Go has added support for _generics_, also known as _type parameters_.
+For a more thorough explanation of this type signature, see [this blog post](https://go.dev/blog/deconstructing-type-parameters).
+Note that this function exists in the standard library as [slices.Index](https://pkg.go.dev/slices#Index).
 
 ```go
 package main
 
 import "fmt"
 
+// As an example of a generic function, SlicesIndex takes a slice of any comparable type and an element of that type
+// and returns the index of the first occurrence of v in s, or -1 if not present.
+// The comparable constraint means that we can compare values of this type with the == and != operators.
 func SlicesIndex[S ~[]E, E comparable](s S, v E) int {
-    for i := range s {
-        if v == s[i] {
-            return i
-        }
-    }
-    return -1
+	for i := range s {
+		if v == s[i] {
+			return i
+		}
+	}
+	return -1
 }
 
+// As an example of a generic type, List is a singly-linked list with values of any type.
 type List[T any] struct {
-    head, tail *element[T]
+	head, tail *element[T]
 }
 
 type element[T any] struct {
-    next *element[T]
-    val  T
+	next *element[T]
+	val  T
 }
 
+// We can define methods on generic types just like we do on regular types,
+// but we have to keep the type parameters in place. The type is List[T], not List.
 func (lst *List[T]) Push(v T) {
-    if lst.tail == nil {
-        lst.head = &element[T]{val: v}
-        lst.tail = lst.head
-    } else {
-        lst.tail.next = &element[T]{val: v}
-        lst.tail = lst.tail.next
-    }
+	if lst.tail == nil {
+		lst.head = &element[T]{val: v}
+		lst.tail = lst.head
+	} else {
+		lst.tail.next = &element[T]{val: v}
+		lst.tail = lst.tail.next
+	}
 }
 
+// AllElements returns all the List elements as a slice.
+// In the next example we’ll see a more idiomatic way of iterating
+// over all elements of custom types.
 func (lst *List[T]) AllElements() []T {
-    var elems []T
-    for e := lst.head; e != nil; e = e.next {
-        elems = append(elems, e.val)
-    }
-    return elems
+	var elems []T
+	for e := lst.head; e != nil; e = e.next {
+		elems = append(elems, e.val)
+	}
+	return elems
 }
 
 func main() {
-    var s = []string{"foo", "bar", "zoo"}
+	var s = []string{"foo", "bar", "zoo"}
 
-    fmt.Println("index of zoo:", SlicesIndex(s, "zoo"))
+	// When invoking generic functions, we can often rely on type inference.
+	// Note that we don’t have to specify the types for S and E when calling SlicesIndex
+	// the compiler infers them automatically.
+	fmt.Println("index of zoo:", SlicesIndex(s, "zoo"))
 
-    _ = SlicesIndex[[]string, string](s, "zoo")
+	// though we could also specify them explicitly.
+	// _ = SlicesIndex[[]string, string](s, "zoo")
 
-    lst := List[int]{}
-    lst.Push(10)
-    lst.Push(13)
-    lst.Push(23)
-    fmt.Println("list:", lst.AllElements())
+	lst := List[int]{}
+	lst.Push(10)
+	lst.Push(13)
+	lst.Push(23)
+	fmt.Println("list:", lst.AllElements())
 }
 ```
 
-## Range over Iterators
+```sh
+go run generics.go
+index of zoo: 2
+list: [10 13 23]
+```
 
-Starting with version 1.23, Go has added support for [iterators](https://go.dev/blog/range-functions), which lets us range over pretty much anything.
-The iterator function takes another function as a parameter, called yield by convention.
-Packages like [slices](https://pkg.go.dev/slices) have a number of useful functions to work with iterators.
+## 25.Range over Iterators
+
+Starting with version 1.23, Go has added support for [iterators](https://go.dev/blog/range-functions), which lets us range over pretty much anything!
 
 ```go
 package main
 
 import (
-    "fmt"
-    "iter"
-    "slices"
+	"fmt"
+	"iter"
+	"slices"
 )
 
+// Let’s look at the List type from the previous example again.
+// In that example we had an AllElements method that returned a slice of all elements in the list.
+// With Go iterators, we can do it better - as shown below.
 type List[T any] struct {
-    head, tail *element[T]
+	head, tail *element[T]
 }
 
 type element[T any] struct {
-    next *element[T]
-    val  T
+	next *element[T]
+	val  T
 }
 
 func (lst *List[T]) Push(v T) {
-    if lst.tail == nil {
-        lst.head = &element[T]{val: v}
-        lst.tail = lst.head
-    } else {
-        lst.tail.next = &element[T]{val: v}
-        lst.tail = lst.tail.next
-    }
+	if lst.tail == nil {
+		lst.head = &element[T]{val: v}
+		lst.tail = lst.head
+	} else {
+		lst.tail.next = &element[T]{val: v}
+		lst.tail = lst.tail.next
+	}
 }
 
+// All returns an iterator, which in Go is a function with a special signature.
 func (lst *List[T]) All() iter.Seq[T] {
-    return func(yield func(T) bool) {
-
-        for e := lst.head; e != nil; e = e.next {
-            if !yield(e.val) {
-                return
-            }
-        }
-    }
+	return func(yield func(T) bool) {
+		// The iterator function takes another function as a parameter,
+		// called yield by convention (but the name can be arbitrary).
+		// It will call yield for every element we want to iterate over,
+		// and note yield’s return value for a potential early termination.
+		for e := lst.head; e != nil; e = e.next {
+			if !yield(e.val) {
+				return
+			}
+		}
+	}
 }
 
+// Iteration doesn’t require an underlying data structure, and doesn’t even have to be finite!
+// Here’s a function returning an iterator over Fibonacci numbers: it keeps running as long as yield keeps returning true.
 func genFib() iter.Seq[int] {
-    return func(yield func(int) bool) {
-        a, b := 1, 1
+	return func(yield func(int) bool) {
+		a, b := 1, 1
 
-        for {
-            if !yield(a) {
-                return
-            }
-            a, b = b, a+b
-        }
-    }
+		for {
+			if !yield(a) {
+				return
+			}
+			a, b = b, a+b
+		}
+	}
 }
 
 func main() {
-    lst := List[int]{}
-    lst.Push(10)
-    lst.Push(13)
-    lst.Push(23)
+	lst := List[int]{}
+	lst.Push(10)
+	lst.Push(13)
+	lst.Push(23)
 
-    for e := range lst.All() {
-        fmt.Println(e)
-    }
+	// Since List.All returns an iterator, we can use it in a regular range loop.
+	for e := range lst.All() {
+		fmt.Println(e)
+	}
 
-    all := slices.Collect(lst.All())
-    fmt.Println("all:", all)
+	// Packages like slices have a number of useful functions to work with iterators.
+	// For example, Collect takes any iterator and collects all its values into a slice.
+	all := slices.Collect(lst.All())
+	fmt.Println("all:", all)
 
-    for n := range genFib() {
-
-        if n >= 10 {
-            break
-        }
-        fmt.Println(n)
-    }
+	// Standard library packages now expose iterator helpers too.
+	// For example, strings.SplitSeq iterates over parts of a byte slice without first building a result slice.
+	for n := range genFib() {
+		// Once the loop hits break or an early return, the yield function passed to the iterator will return false.
+		if n >= 10 {
+			break
+		}
+		fmt.Println(n)
+	}
 }
 ```
 
-## Errors
+```sh
+go run range-over-iterators.go
+10
+13
+23
+all: [10 13 23]
+part: go
+part: by
+part: example
+0
+1
+1
+2
+3
+5
+8
+```
 
-In Go it’s idiomatic to communicate [errors](https://pkg.go.dev/errors) via an explicit, separate return [value](https://go.dev/blog/go1.13-errors). This contrasts with the exceptions.
-By convention, errors are the last return value and have type error, a built-in interface.
-A nil value in the error position indicates that there was no error.
-A sentinel error is a predeclared variable that is used to signify a specific error condition.
-_errors.Is_ checks that a given error.
+## 26.Errors
+
+In Go it’s idiomatic to communicate errors via an explicit, separate return value. This contrasts with the exceptions used in languages like Java, Python and Ruby and the overloaded single result / error value sometimes used in C. Go’s approach makes it easy to see which functions return errors and to handle them using the same language constructs employed for other, non-error tasks.
+
+See the documentation of the [errors package](https://pkg.go.dev/errors) and [this blog post](https://go.dev/blog/go1.13-errors) for additional details.
 
 ```go
 package main
@@ -1449,31 +1505,39 @@ import (
 	"fmt"
 )
 
+// By convention, errors are the last return value and have type error, a built-in interface.
 func f(arg int) (int, error) {
 	if arg == 42 {
-
+		// errors.New constructs a basic error value with the given error message.
 		return -1, errors.New("can't work with 42")
 	}
-
+	// A nil value in the error position indicates that there was no error.
 	return arg + 3, nil
 }
 
-var ErrOutOfTea = fmt.Errorf("no more tea available")
-var ErrPower = fmt.Errorf("can't boil water")
+// A sentinel error is a predeclared variable that is used to signify a specific error condition.
+var ErrOutOfTea = errors.New("no more tea available")
+var ErrPower = errors.New("can't boil water")
 
 func makeTea(arg int) error {
-	if arg == 2 {
+	switch arg {
+	case 2:
 		return ErrOutOfTea
-	} else if arg == 4 {
+	case 4:
 
 		return fmt.Errorf("making tea: %w", ErrPower)
 	}
 	return nil
 }
 
+// We can wrap errors with higher-level errors to add context.
+// The simplest way to do this is with the %w verb in fmt.Errorf.
+// Wrapped errors create a logical chain (A wraps B, which wraps C, etc.)
+// that can be queried with functions like errors.Is and errors.AsType.
+
 func main() {
 	for _, i := range []int{7, 42} {
-
+		// It’s idiomatic to use an inline error check in the if line.
 		if r, e := f(i); e != nil {
 			fmt.Println("f failed:", e)
 		} else {
@@ -1483,7 +1547,9 @@ func main() {
 
 	for i := range 5 {
 		if err := makeTea(i); err != nil {
-
+			// errors.Is checks that a given error (or any error in its chain) matches a specific error value.
+			// This is especially useful with wrapped or nested errors, allowing you to identify specific error types
+			// or sentinel errors in a chain of errors.
 			if errors.Is(err, ErrOutOfTea) {
 				fmt.Println("We should buy new tea!")
 			} else if errors.Is(err, ErrPower) {
@@ -1497,4 +1563,15 @@ func main() {
 		fmt.Println("Tea is ready!")
 	}
 }
+```
+
+```sh
+go run errors.go
+f worked: 10
+f failed: can't work with 42
+Tea is ready!
+Tea is ready!
+We should buy new tea!
+Tea is ready!
+Now it is dark.
 ```
