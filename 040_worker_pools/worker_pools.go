@@ -18,22 +18,29 @@ func worker(id int, jobs <-chan int, results chan<- int) {
 }
 
 func main() {
+	start := time.Now()
 	// In order to use our pool of workers we need to send them work and collect their results.
 	// We make 2 channels for this.
 	const numJobs = 5
 	jobs := make(chan int, numJobs)
 	results := make(chan int, numJobs)
 
+	// This starts up 3 workers, initially blocked because there are no jobs yet.
 	for w := 1; w <= 3; w++ {
 		go worker(w, jobs, results)
 	}
 
+	// Here we send 5 jobs and then close that channel to indicate that’s all the work we have.
 	for j := 1; j <= numJobs; j++ {
 		jobs <- j
 	}
 	close(jobs)
 
+	// Finally we collect all the results of the work.
+	// This also ensures that the worker goroutines have finished.
+	// An alternative way to wait for multiple goroutines is to use a WaitGroup.
 	for a := 1; a <= numJobs; a++ {
 		<-results
 	}
+	fmt.Println(time.Since(start))
 }

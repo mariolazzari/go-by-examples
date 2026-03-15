@@ -6,7 +6,7 @@ _Go by Example_ is a hands-on introduction to Go using annotated example program
 
 Unless stated otherwise, examples here assume the [latest major release Go](https://go.dev/doc/devel/release) and may use new language features. Try to upgrade to the latest version if something isn't working.
 
-## 1. Hello world
+## Hello world
 
 Our first program will print the classic “hello world” message. Here’s the full source code.
 
@@ -38,7 +38,7 @@ We can then execute the built binary directly.
 ./hello-world
 ```
 
-## 2. Values
+## Values
 
 Go has various _value types_ including strings, integers, floats, booleans...
 Here are a few basic examples.
@@ -69,7 +69,7 @@ true
 false
 ```
 
-## 3. Variables
+## Variables
 
 In Go, _variables_ are explicitly declared and used by the compiler to e.g. check type-correctness of function calls.
 The _:=_ syntax is shorthand for declaring and initializing a variable, e.g. for var f string = "apple" in this case. This syntax is only available inside functions.
@@ -114,7 +114,7 @@ true
 apple
 ```
 
-## 4. Constants
+## Constants
 
 Go supports _constants_ of character, string, boolean, and numeric values.
 
@@ -157,7 +157,7 @@ constant
 -0.28470407323754404
 ```
 
-## 5.For
+## For
 
 _for_ is Go’s _only looping construct_.
 Here are some basic types of for loops.
@@ -202,7 +202,7 @@ func main() {
 }
 ```
 
-## 6.If
+## If
 
 Branching with if and else in Go is straight-forward.
 
@@ -262,7 +262,7 @@ loop
 5
 ```
 
-## 7.Switch
+## Switch
 
 Switch statements express conditionals across many branches.
 
@@ -329,7 +329,7 @@ I'm an int
 Don't know type string
 ```
 
-## 8.Arrays
+## Arrays
 
 In Go, an array is a numbered sequence of elements of a specific length.
 In typical Go code, _slices_ are much more common; arrays are useful in some special scenarios.
@@ -391,7 +391,7 @@ idx: [100 0 0 400 500]
 2d:  [[1 2 3] [1 2 3]]
 ```
 
-## 9.Slices
+## Slices
 
 _Slices_ are an important data type in Go, giving a more powerful interface to sequences than arrays.
 Check out [this great blog post](https://go.dev/blog/slices-intro) by the Go team for more details on the design and implementation of slices in Go.
@@ -494,7 +494,7 @@ t == t2
 2d:  [[0] [1 2] [2 3 4]]
 ```
 
-## 10.Maps
+## Maps
 
 Maps are Go’s built-in [associative data type](https://en.wikipedia.org/wiki/Associative_array) (hashes / dictionaries).
 If the key doesn’t exist, the [zero value](https://go.dev/ref/spec#The_zero_value)
@@ -568,7 +568,7 @@ map: map[bar:2 foo:1]
 n == n2
 ```
 
-## 11.Functions
+## Functions
 
 _Functions_ are central in Go. We’ll learn about functions with a few different examples.
 
@@ -606,7 +606,7 @@ go run functions.go
 1+2+3 = 6
 ```
 
-## 12.Multiple Return Values
+## Multiple Return Values
 
 Go has built-in support for _multiple return values_.
 This feature is used often in idiomatic Go, for example to return both result and error.
@@ -640,7 +640,7 @@ go run multiple-return-values.go
 7
 ```
 
-## 13.Variadic functions
+## Variadic functions
 
 [Variadic functions](https://en.wikipedia.org/wiki/Variadic_function) can be called with any number of trailing arguments.
 For example, fmt.Println is a common variadic function.
@@ -681,7 +681,7 @@ go run variadic-functions.go
 [1 2 3 4] 10
 ```
 
-## 14.Closures
+## Closures
 
 Go supports [anonymous functions](https://en.wikipedia.org/wiki/Anonymous_function), which can form [closures](<https://en.wikipedia.org/wiki/Closure_(computer_programming)>).
 Anonymous functions are useful when you want to define a function inline without having to name it.
@@ -725,7 +725,7 @@ go run closures.go
 1
 ```
 
-## 15.Recursion
+## Recursion
 
 Go supports [recursive functions](<https://en.wikipedia.org/wiki/Recursion_(computer_science)>). Here’s a classic example.
 
@@ -768,7 +768,7 @@ go run recursion.go
 13
 ```
 
-## 16.Range over Built-in Types
+## Range over Built-in Types
 
 _range_ iterates over elements in a variety of built-in data structures.
 Let’s see how to use range with some of the data structures we’ve already learned.
@@ -829,7 +829,7 @@ key: b
 1 111
 ```
 
-## 17.Pointers
+## Pointers
 
 Go supports [pointers](<https://en.wikipedia.org/wiki/Pointer_(computer_programming)>), allowing you to pass references to values and records within your program.
 
@@ -878,7 +878,7 @@ zeroptr: 0
 pointer: 0x42131100
 ```
 
-## 18.Strings and runes
+## Strings and runes
 
 A Go string is a read-only slice of bytes. The language and the standard library treat strings specially - as containers of text encoded in UTF-8. In other languages, strings are made of “characters”.
 In Go, the concept of a character is called a rune - it’s an integer that represents a Unicode code point.
@@ -965,7 +965,7 @@ U+0E14 'ด' starts at 12
 U+0E35 'ี' starts at 15
 ```
 
-## 19.Structs
+## Structs
 
 Go’s structs are typed collections of fields. They’re useful for grouping data together to form records.
 
@@ -1040,7 +1040,7 @@ Sean
 {Rex true}
 ```
 
-## 20.Methods
+## Methods
 
 Go supports methods defined on struct types.
 
@@ -1088,7 +1088,7 @@ area:  50
 perim: 30
 ```
 
-## 21.Interfaces
+## Interfaces
 
 _Interfaces_ are named collections of method signatures.
 
@@ -1172,7 +1172,7 @@ go run interfaces.go
 circle with radius 5
 ```
 
-## 22.Enums
+## Enums
 
 _Enumerated types_ (enums) are a special case of [sum types](https://en.wikipedia.org/wiki/Algebraic_data_type). An enum is a type that has a fixed number of possible values, each with a distinct name. Go doesn’t have an enum type as a distinct language feature, but enums are simple to implement using existing language idioms.
 
@@ -1237,7 +1237,7 @@ func transition(s ServerState) ServerState {
 }
 ```
 
-## 23.Struct Embedding
+## Struct Embedding
 
 Go supports embedding of structs and interfaces to express a more seamless composition of types.
 This is not to be confused with _//go:embed_ which is a go directive introduced in Go version 1.16+ to embed files and folders into the application binary.
@@ -1299,7 +1299,7 @@ describe: base with num=1
 describer: base with num=1
 ```
 
-## 24.Generics
+## Generics
 
 Starting with version 1.18, Go has added support for _generics_, also known as _type parameters_.
 For a more thorough explanation of this type signature, see [this blog post](https://go.dev/blog/deconstructing-type-parameters).
@@ -1380,7 +1380,7 @@ index of zoo: 2
 list: [10 13 23]
 ```
 
-## 25.Range over Iterators
+## Range over Iterators
 
 Starting with version 1.23, Go has added support for [iterators](https://go.dev/blog/range-functions), which lets us range over pretty much anything!
 
@@ -1491,7 +1491,7 @@ part: example
 8
 ```
 
-## 26.Errors
+## Errors
 
 In Go it’s idiomatic to communicate errors via an explicit, separate return value. This contrasts with the exceptions used in languages like Java, Python and Ruby and the overloaded single result / error value sometimes used in C. Go’s approach makes it easy to see which functions return errors and to handle them using the same language constructs employed for other, non-error tasks.
 
@@ -1576,7 +1576,7 @@ Tea is ready!
 Now it is dark.
 ```
 
-## 27.Custom Errors
+## Custom Errors
 
 It’s possible to define custom error types by implementing the Error() method on them. Here’s a variant on the example above that uses a custom type to explicitly represent an argument error.
 
@@ -1628,7 +1628,7 @@ go run custom-errors.go
 can't work with it
 ```
 
-## 28.Goroutines
+## Goroutines
 
 A goroutine is a lightweight thread of execution.
 
@@ -1681,7 +1681,7 @@ goroutine : 2
 done
 ```
 
-## 29.Channels
+## Channels
 
 _Channels_ are the pipes that connect concurrent goroutines.
 You can send values into channels from one goroutine and receive those values into another goroutine.
@@ -1716,7 +1716,7 @@ go run channels.go
 ping
 ```
 
-## 30 Channel buffering
+## Channel buffering
 
 By default channels are unbuffered, meaning that they will only accept sends (chan <-) if there is a corresponding receive (<- chan) ready to receive the sent value. Buffered channels accept a limited number of values without a corresponding receiver for those values.
 
@@ -1745,7 +1745,7 @@ buffered
 channel
 ```
 
-## 31.Channel Synchronization
+## Channel Synchronization
 
 We can use channels to synchronize execution across goroutines.
 Here’s an example of using a blocking receive to wait for a goroutine to finish.
@@ -1787,7 +1787,7 @@ working...done
 
 If you removed the <- done line from this program, the program could exit before the worker finished its work, or in some cases even before it started.
 
-## 32.Channel Directions
+## Channel Directions
 
 When using channels as function parameters, you can specify if a channel is meant to only send or receive values.
 This specificity increases the type-safety of the program.
@@ -1823,7 +1823,7 @@ go run channel-directions.go
 passed message
 ```
 
-## 33.Select
+## Select
 
 Go’s _select_ lets you wait on multiple channel operations.
 Combining goroutines and channels with select is a powerful feature of Go.
@@ -1873,7 +1873,7 @@ received two
 Elapsed: 2.00111067s
 ```
 
-## 34.Timeouts
+## Timeouts
 
 _Timeouts_ are important for programs that connect to external resources or that otherwise need to bound execution time.
 Implementing timeouts in Go is easy and elegant thanks to channels and select.
@@ -1931,7 +1931,7 @@ timeout 1
 result 2
 ```
 
-## 35.Non-Blocking Channel Operations
+## Non-Blocking Channel Operations
 
 Basic sends and receives on channels are blocking.
 However, we can use select with a default clause to implement _non-blocking_ sends, receives, and even non-blocking multi-way selects.
@@ -1987,7 +1987,7 @@ no message sent
 no activity
 ```
 
-## 36.Closing Channels
+## Closing Channels
 
 _Closing_ a channel indicates that no more values will be sent on it. This can be useful to communicate completion to the channel’s receivers.
 
@@ -2056,7 +2056,7 @@ received all jobs
 received more jobs: false
 ```
 
-## 37.Range over Channels
+## Range over Channels
 
 In a previous example we saw how for and range provide iteration over basic data structures.
 We can also use this syntax to iterate over values received from a channel
@@ -2088,7 +2088,7 @@ one
 two
 ```
 
-## 38.Timers
+## Timers
 
 We often want to execute Go code at some point in the future, or repeatedly at some interval.
 Go’s built-in timer and ticker features make both of these tasks easy.
@@ -2138,7 +2138,7 @@ Timer 2 stopped
 
 The first timer will fire ~2s after we start the program, but the second should be stopped before it has a chance to fire.
 
-## 39.Tickers
+## Tickers
 
 Timers are for when you want to do something once in the future
 Tickers are for when you want to do something repeatedly at regular intervals.
@@ -2189,14 +2189,71 @@ Ticker stopped
 
 When we run this program the ticker should tick 3 times before we stop it.
 
-## 40.Worker pools
+## Worker pools
 
 In this example we’ll look at how to implement a _worker pool_ using goroutines and channels.
 
 ```go
+package main
 
+import (
+	"fmt"
+	"time"
+)
+
+// Here’s the worker, of which we’ll run several concurrent instances.
+// These workers will receive work on the jobs channel and send the corresponding results on results.
+// We’ll sleep a second per job to simulate an expensive task.
+func worker(id int, jobs <-chan int, results chan<- int) {
+	for j := range jobs {
+		fmt.Println("worker", id, "started  job", j)
+		time.Sleep(time.Second)
+		fmt.Println("worker", id, "finished job", j)
+		results <- j * 2
+	}
+}
+
+func main() {
+	// In order to use our pool of workers we need to send them work and collect their results.
+	// We make 2 channels for this.
+	const numJobs = 5
+	jobs := make(chan int, numJobs)
+	results := make(chan int, numJobs)
+
+	// This starts up 3 workers, initially blocked because there are no jobs yet.
+	for w := 1; w <= 3; w++ {
+		go worker(w, jobs, results)
+	}
+
+	// Here we send 5 jobs and then close that channel to indicate that’s all the work we have.
+	for j := 1; j <= numJobs; j++ {
+		jobs <- j
+	}
+	close(jobs)
+
+	// Finally we collect all the results of the work.
+	// This also ensures that the worker goroutines have finished.
+	// An alternative way to wait for multiple goroutines is to use a WaitGroup.
+	for a := 1; a <= numJobs; a++ {
+		<-results
+	}
+}
 ```
 
 ```sh
-
+time go run worker-pools.go
+worker 1 started  job 1
+worker 2 started  job 2
+worker 3 started  job 3
+worker 1 finished job 1
+worker 1 started  job 4
+worker 2 finished job 2
+worker 2 started  job 5
+worker 3 finished job 3
+worker 1 finished job 4
+worker 2 finished job 5
+real    0m2.358s
 ```
+
+Our running program shows the 5 jobs being executed by various workers.
+The program only takes about 2 seconds despite doing about 5 seconds of total work because there are 3 workers operating concurrently.
