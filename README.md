@@ -6,7 +6,7 @@ _Go by Example_ is a hands-on introduction to Go using annotated example program
 
 Unless stated otherwise, examples here assume the [latest major release Go](https://go.dev/doc/devel/release) and may use new language features. Try to upgrade to the latest version if something isn't working.
 
-## 1.Hello world
+## 1. Hello world
 
 Our first program will print the classic “hello world” message. Here’s the full source code.
 
@@ -38,7 +38,7 @@ We can then execute the built binary directly.
 ./hello-world
 ```
 
-## 2.Values
+## 2. Values
 
 Go has various _value types_ including strings, integers, floats, booleans...
 Here are a few basic examples.
@@ -69,7 +69,7 @@ true
 false
 ```
 
-## 3.Variables
+## 3. Variables
 
 In Go, _variables_ are explicitly declared and used by the compiler to e.g. check type-correctness of function calls.
 The _:=_ syntax is shorthand for declaring and initializing a variable, e.g. for var f string = "apple" in this case. This syntax is only available inside functions.
@@ -114,7 +114,7 @@ true
 apple
 ```
 
-## 4.Constants
+## 4. Constants
 
 Go supports _constants_ of character, string, boolean, and numeric values.
 
@@ -2188,3 +2188,15 @@ Ticker stopped
 ```
 
 When we run this program the ticker should tick 3 times before we stop it.
+
+## 40.Worker pools
+
+In this example we’ll look at how to implement a _worker pool_ using goroutines and channels.
+
+```go
+
+```
+
+```sh
+
+```
