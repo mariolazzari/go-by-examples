@@ -2395,8 +2395,7 @@ request 5 2012-10-19 00:38:20.887542 +0000 UTC
 
 ## Atomic Counters
 
-
-The primary mechanism for managing state in Go is communication over channels. We saw this for example with worker pools. There are a few other options for managing state though. Here we’ll look at using the *sync/atomic* package for *atomic counters* accessed by multiple goroutines.
+The primary mechanism for managing state in Go is communication over channels. We saw this for example with worker pools. There are a few other options for managing state though. Here we’ll look at using the _sync/atomic_ package for _atomic counters_ accessed by multiple goroutines.
 
 ```go
 package main
@@ -2509,4 +2508,305 @@ func main() {
 ```sh
 go run mutexes.go
 map[a:20000 b:10000]
+```
+
+## Stateful Goroutines
+
+In the previous example we used explicit locking with mutexes to synchronize access to shared state across multiple goroutines. Another option is to use the built-in synchronization features of goroutines and channels to achieve the same result. This channel-based approach aligns with Go’s ideas of sharing memory by communicating and having each piece of data owned by exactly one goroutine.
+
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"sync/atomic"
+	"time"
+)
+
+// In this example our state will be owned by a single goroutine.
+// This will guarantee that the data is never corrupted with concurrent access.
+// In order to read or write that state, other goroutines will send messages
+// to the owning goroutine and receive corresponding replies.
+// These readOp and writeOp structs encapsulate those requests
+// and a way for the owning goroutine to respond.
+type readOp struct {
+	key  int
+	resp chan int
+}
+type writeOp struct {
+	key  int
+	val  int
+	resp chan bool
+}
+
+func main() {
+	// As before we’ll count how many operations we perform.
+	var readOps uint64
+	var writeOps uint64
+
+	// The reads and writes channels will be used by other goroutines
+	// to issue read and write requests, respectively.
+	reads := make(chan readOp)
+	writes := make(chan writeOp)
+
+	// Here is the goroutine that owns the state,
+	// which is a map as in the previous example but now private to the stateful goroutine.
+	// This goroutine repeatedly selects on the reads and writes channels,
+	// responding to requests as they arrive.
+	// A response is executed by first performing the requested operation and then
+	// sending a value on the response channel resp to indicate success
+	// (and the desired value in the case of reads).
+	go func() {
+		var state = make(map[int]int)
+		for {
+			select {
+			case read := <-reads:
+				read.resp <- state[read.key]
+			case write := <-writes:
+				state[write.key] = write.val
+				write.resp <- true
+			}
+		}
+	}()
+
+	// This starts 100 goroutines to issue reads to the state-owning
+	// goroutine via the reads channel.
+	// Each read requires constructing a readOp, sending it over the reads channel,
+	// and then receiving the result over the provided resp channel.
+	for range 100 {
+		go func() {
+			for {
+				read := readOp{
+					key:  rand.Intn(5),
+					resp: make(chan int)}
+				reads <- read
+				<-read.resp
+				atomic.AddUint64(&readOps, 1)
+				time.Sleep(time.Millisecond)
+			}
+		}()
+	}
+
+	// We start 10 writes as well, using a similar approach.
+	for range 10 {
+		go func() {
+			for {
+				write := writeOp{
+					key:  rand.Intn(5),
+					val:  rand.Intn(100),
+					resp: make(chan bool)}
+				writes <- write
+				<-write.resp
+				atomic.AddUint64(&writeOps, 1)
+				time.Sleep(time.Millisecond)
+			}
+		}()
+	}
+
+	// Let the goroutines work for a second.
+	time.Sleep(time.Second)
+
+	// Finally, capture and report the op counts.
+	readOpsFinal := atomic.LoadUint64(&readOps)
+	fmt.Println("readOps:", readOpsFinal)
+	writeOpsFinal := atomic.LoadUint64(&writeOps)
+	fmt.Println("writeOps:", writeOpsFinal)
+}
+```
+
+```sh
+go run stateful-goroutines.go
+readOps: 71708
+writeOps: 7177
+```
+
+For this particular case the goroutine-based approach was a bit more involved than the mutex-based one. It might be useful in certain cases though, for example where you have other channels involved or when managing multiple such mutexes would be error-prone. You should use whichever approach feels most natural, especially with respect to understanding the correctness of your program.
+
+## Sorting
+
+Go’s slices package implements sorting for builtins and user-defined types. We’ll look at sorting for builtins first.
+
+```go
+package main
+
+import (
+	"fmt"
+	"slices"
+)
+
+func main() {
+	// Sorting functions are generic, and work for any ordered built-in type.
+	// For a list of ordered types, see cmp.Ordered.
+	strs := []string{"c", "a", "b"}
+	slices.Sort(strs)
+	fmt.Println("Strings:", strs)
+
+	// An example of sorting ints.
+	ints := []int{7, 2, 4}
+	slices.Sort(ints)
+	fmt.Println("Ints:   ", ints)
+
+	// We can also use the slices package to check if a slice is already in sorted order.
+	s := slices.IsSorted(ints)
+	fmt.Println("Sorted: ", s)
+}
+```
+
+```sh
+go run sorting.go
+Strings: [a b c]
+Ints:    [2 4 7]
+Sorted:  true
+```
+
+## Sort by functions
+
+Sometimes we’ll want to sort a collection by something other than its natural order. For example, suppose we wanted to sort strings by their length instead of alphabetically. Here’s an example of custom sorts in Go.
+
+```go
+package main
+
+import (
+	"cmp"
+	"fmt"
+	"slices"
+)
+
+func main() {
+	fruits := []string{"peach", "banana", "kiwi"}
+	// We implement a comparison function for string lengths.
+	// cmp.Compare is helpful for this.
+	lenCmp := func(a, b string) int {
+		return cmp.Compare(len(a), len(b))
+	}
+
+	// Now we can call slices.SortFunc with this custom comparison
+	// function to sort fruits by name length.
+	slices.SortFunc(fruits, lenCmp)
+	fmt.Println(fruits)
+
+	// We can use the same technique to sort a slice of values that aren’t built-in types.
+	type Person struct {
+		name string
+		age  int
+	}
+
+	people := []Person{
+		{name: "Jax", age: 37},
+		{name: "TJ", age: 25},
+		{name: "Alex", age: 72},
+	}
+
+	// Sort people by age using slices.SortFunc.
+	slices.SortFunc(people,
+		func(a, b Person) int {
+			return cmp.Compare(a.age, b.age)
+		})
+	fmt.Println(people)
+}
+```
+
+```sh
+go run sorting-by-functions.go
+[kiwi peach banana]
+[{TJ 25} {Jax 37} {Alex 72}]
+```
+
+Note: if the Person struct is large, you may want the slice to contain \*Person instead and adjust the sorting function accordingly.
+
+## Panic
+
+A panic typically means something went unexpectedly wrong. Mostly we use it to fail fast on errors that shouldn’t occur during normal operation, or that we aren’t prepared to handle gracefully.
+
+```go
+package main
+
+import (
+	"os"
+	"path/filepath"
+)
+
+func main() {
+	// We’ll use panic throughout this site to check for unexpected errors.
+	// This is the only program on the site designed to panic.
+	panic("a problem")
+
+	// A common use of panic is to abort if a function returns an error value
+	// that we don’t know how to (or want to) handle.
+	// Here’s an example of panicking if we get an unexpected error when creating a new file.
+	path := filepath.Join(os.TempDir(), "file")
+	_, err := os.Create(path)
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+```sh
+go run panic.go
+panic: a problem
+goroutine 1 [running]:
+main.main()
+    /.../panic.go:12 +0x47
+...
+exit status 2
+```
+
+## Defer
+
+_Defer_ is used to ensure that a function call is performed later in a program’s execution, usually for purposes of cleanup. defer is often used where e.g. ensure and finally would be used in other languages.
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+// Suppose we wanted to create a file, write to it, and then close when we’re done.
+// Here’s how we could do that with defer.
+func main() {
+	// Immediately after getting a file object with createFile,
+	// we defer the closing of that file with closeFile.
+	// This will be executed at the end of the enclosing function (main),
+	// after writeFile has finished.
+	path := filepath.Join(os.TempDir(), "defer.txt")
+	f := createFile(path)
+	defer closeFile(f)
+	writeFile(f)
+}
+
+// It’s important to check for errors when closing a file, even in a deferred function.
+func createFile(p string) *os.File {
+	fmt.Println("creating")
+	f, err := os.Create(p)
+	if err != nil {
+		panic(err)
+	}
+	return f
+}
+
+func writeFile(f *os.File) {
+	fmt.Println("writing")
+	fmt.Fprintln(f, "data")
+}
+
+func closeFile(f *os.File) {
+	fmt.Println("closing")
+	err := f.Close()
+
+	if err != nil {
+		panic(err)
+	}
+}
+```
+
+```sh
+go run defer.go
+creating
+writing
+closing
 ```
