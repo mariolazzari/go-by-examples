@@ -2392,3 +2392,121 @@ request 3 2012-10-19 00:38:20.487676 +0000 UTC
 request 4 2012-10-19 00:38:20.687483 +0000 UTC
 request 5 2012-10-19 00:38:20.887542 +0000 UTC
 ```
+
+## Atomic Counters
+
+
+The primary mechanism for managing state in Go is communication over channels. We saw this for example with worker pools. There are a few other options for managing state though. Here we’ll look at using the *sync/atomic* package for *atomic counters* accessed by multiple goroutines.
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"sync/atomic"
+)
+
+func main() {
+	// We’ll use an atomic integer type to represent our (always-positive) counter.
+	var ops atomic.Uint64
+	//A WaitGroup will help us wait for all goroutines to finish their work.
+	var wg sync.WaitGroup
+
+	// We’ll start 50 goroutines that each increment the counter exactly 1000 times.
+	for range 50 {
+		wg.Go(func() {
+			for range 1000 {
+				// To atomically increment the counter we use Add.
+				ops.Add(1)
+			}
+		})
+	}
+
+	// Wait until all the goroutines are done.
+	wg.Wait()
+
+	// Here no goroutines are writing to ‘ops’,
+	// but using Load it’s safe to atomically read a value even while other goroutines are (atomically) updating it.
+	fmt.Println("ops:", ops.Load())
+}
+```
+
+```sh
+go run atomic-counters.go
+ops: 50000
+```
+
+We expect to get exactly 50,000 operations. Had we used a non-atomic integer and incremented it with ops++, we’d likely get a different number, changing between runs, because the goroutines would interfere with each other. Moreover, we’d get data race failures when running with the -race flag.
+
+## Mutexes
+
+In the previous example we saw how to manage simple counter state using atomic operations. For more complex state we can use a [mutex](https://en.wikipedia.org/wiki/Mutual_exclusion) to safely access data across multiple goroutines.
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+// Container holds a map of counters;
+// since we want to update it concurrently from multiple goroutines,
+// we add a Mutex to synchronize access.
+// Note that mutexes must not be copied, so if this struct is passed around,
+// it should be done by pointer.
+type Container struct {
+	mu       sync.Mutex
+	counters map[string]int
+}
+
+func (c *Container) inc(name string) {
+	// Lock the mutex before accessing counters;
+	// unlock it at the end of the function using a defer statement.
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.counters[name]++
+}
+
+func main() {
+	c := Container{
+		// Note that the zero value of a mutex is usable as-is,
+		// so no initialization is required here.
+		counters: map[string]int{"a": 0, "b": 0},
+	}
+
+	var wg sync.WaitGroup
+
+	// This function increments a named counter in a loop.
+	doIncrement := func(name string, n int) {
+		for range n {
+			c.inc(name)
+		}
+	}
+
+	// Run several goroutines concurrently;
+	// note that they all access the same Container,
+	// and two of them access the same counter.
+	wg.Go(func() {
+		doIncrement("a", 10000)
+	})
+
+	wg.Go(func() {
+		doIncrement("a", 10000)
+	})
+
+	wg.Go(func() {
+		doIncrement("b", 10000)
+	})
+
+	// Wait for the goroutines to finish
+	wg.Wait()
+	fmt.Println(c.counters)
+}
+```
+
+```sh
+go run mutexes.go
+map[a:20000 b:10000]
+```
