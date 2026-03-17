@@ -3356,3 +3356,286 @@ apple
 We’ve covered the basic of JSON in Go here, but check out the [JSON and Go](https://go.dev/blog/json) blog post and [JSON package docs](https://pkg.go.dev/encoding/json) for more.
 
 ## XML
+
+Go offers built-in support for XML and XML-like formats with the encoding/xml package.
+
+```go
+package main
+
+import (
+	"encoding/xml"
+	"fmt"
+)
+
+// Plant will be mapped to XML. Similarly to the JSON examples,
+// field tags contain directives for the encoder and decoder.
+// Here we use some special features of the XML package:
+// the XMLName field name dictates the name of the XML element representing this struct;
+// id,attr means that the Id field is an XML attribute rather than a nested element.
+type Plant struct {
+	XMLName xml.Name `xml:"plant"`
+	Id      int      `xml:"id,attr"`
+	Name    string   `xml:"name"`
+	Origin  []string `xml:"origin"`
+}
+
+func (p Plant) String() string {
+	return fmt.Sprintf("Plant id=%v, name=%v, origin=%v",
+		p.Id, p.Name, p.Origin)
+}
+
+func main() {
+	coffee := &Plant{Id: 27, Name: "Coffee"}
+	coffee.Origin = []string{"Ethiopia", "Brazil"}
+
+	// Emit XML representing our plant;
+	// using MarshalIndent to produce a more human-readable output.
+	out, _ := xml.MarshalIndent(coffee, " ", "  ")
+	fmt.Println(string(out))
+
+	// To add a generic XML header to the output, append it explicitly.
+	fmt.Println(xml.Header + string(out))
+
+	// Use Unmarshal to parse a stream of bytes with XML into a data structure.
+	// If the XML is malformed or cannot be mapped onto Plant,
+	// a descriptive error will be returned.
+	var p Plant
+	if err := xml.Unmarshal(out, &p); err != nil {
+		panic(err)
+	}
+	fmt.Println(p)
+
+	tomato := &Plant{Id: 81, Name: "Tomato"}
+	tomato.Origin = []string{"Mexico", "California"}
+
+	// The parent>child>plant field tag tells the encoder to nest all plants under <parent><child>...
+	type Nesting struct {
+		XMLName xml.Name `xml:"nesting"`
+		Plants  []*Plant `xml:"parent>child>plant"`
+	}
+
+	nesting := &Nesting{}
+	nesting.Plants = []*Plant{coffee, tomato}
+
+	out, _ = xml.MarshalIndent(nesting, " ", "  ")
+	fmt.Println(string(out))
+}
+```
+
+```sh
+go run xml.go
+ <plant id="27">
+   <name>Coffee</name>
+   <origin>Ethiopia</origin>
+   <origin>Brazil</origin>
+ </plant>
+<?xml version="1.0" encoding="UTF-8"?>
+ <plant id="27">
+   <name>Coffee</name>
+   <origin>Ethiopia</origin>
+   <origin>Brazil</origin>
+ </plant>
+Plant id=27, name=Coffee, origin=[Ethiopia Brazil]
+ <nesting>
+   <parent>
+     <child>
+       <plant id="27">
+         <name>Coffee</name>
+         <origin>Ethiopia</origin>
+         <origin>Brazil</origin>
+       </plant>
+       <plant id="81">
+         <name>Tomato</name>
+         <origin>Mexico</origin>
+         <origin>California</origin>
+       </plant>
+     </child>
+   </parent>
+ </nesting>
+```
+
+## Time
+
+Go offers extensive support for times and durations; here are some examples.
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	p := fmt.Println
+	// We’ll start by getting the current time.
+	now := time.Now()
+	p(now)
+
+	// You can build a time struct by providing the year, month, day, etc.
+	// Times are always associated with a Location, i.e. time zone.
+	then := time.Date(
+		2009, 11, 17, 20, 34, 58, 651387237, time.UTC)
+	p(then)
+
+	// You can extract the various components of the time value as expected.
+	p(then.Year())
+	p(then.Month())
+	p(then.Day())
+	p(then.Hour())
+	p(then.Minute())
+	p(then.Second())
+	p(then.Nanosecond())
+	p(then.Location())
+
+	// The Monday-Sunday Weekday is also available.
+	p(then.Weekday())
+
+	// These methods compare two times, testing if the first occurs
+	// before, after, or at the same time as the second, respectively.
+	p(then.Before(now))
+	p(then.After(now))
+	p(then.Equal(now))
+
+	// The Sub methods returns a Duration representing the interval between two times.
+	diff := now.Sub(then)
+	p(diff)
+
+	// We can compute the length of the duration in various units.
+	p(diff.Hours())
+	p(diff.Minutes())
+	p(diff.Seconds())
+	p(diff.Nanoseconds())
+
+	// You can use Add to advance a time by a given duration,
+	// or with a - to move backwards by a duration.
+	p(then.Add(diff))
+	p(then.Add(-diff))
+}
+```
+
+```sh
+go run time.go
+2012-10-31 15:50:13.793654 +0000 UTC
+2009-11-17 20:34:58.651387237 +0000 UTC
+2009
+November
+17
+20
+34
+58
+651387237
+UTC
+Tuesday
+true
+false
+false
+25891h15m15.142266763s
+25891.25420618521
+1.5534752523711128e+06
+9.320851514226677e+07
+93208515142266763
+2012-10-31 15:50:13.793654 +0000 UTC
+2006-12-05 01:19:43.509120474 +0000 UTC
+```
+
+## Epoch
+
+A common requirement in programs is getting the number of seconds, milliseconds, or nanoseconds since the [Unix epoch](https://en.wikipedia.org/wiki/Unix_time). Here’s how to do it in Go.
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	// Use time.Now with Unix, UnixMilli or UnixNano to get elapsed time
+	// since the Unix epoch in seconds, milliseconds or nanoseconds, respectively.
+	now := time.Now()
+	fmt.Println(now)
+
+	fmt.Println(now.Unix())
+	fmt.Println(now.UnixMilli())
+	fmt.Println(now.UnixNano())
+
+	// You can also convert integer seconds
+	// or nanoseconds since the epoch into the corresponding time.
+	fmt.Println(time.Unix(now.Unix(), 0))
+	fmt.Println(time.Unix(0, now.UnixNano()))
+}
+```
+
+```sh
+go run epoch.go
+2012-10-31 16:13:58.292387 +0000 UTC
+1351700038
+1351700038292
+1351700038292387000
+2012-10-31 16:13:58 +0000 UTC
+2012-10-31 16:13:58.292387 +0000 UTC
+```
+
+## Time Formatting / Parsing
+
+Go supports time formatting and parsing via pattern-based layouts.
+
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	p := fmt.Println
+
+	// Here’s a basic example of formatting a time according to RFC3339,
+	// using the corresponding layout constant.
+	t := time.Now()
+	p(t.Format(time.RFC3339))
+
+	// Time parsing uses the same layout values as Format.
+	t1, _ := time.Parse(time.RFC3339, "2012-11-01T22:08:41+00:00")
+	p(t1)
+
+	// Format and Parse use example-based layouts.
+	// Usually you’ll use a constant from time for these layouts,
+	// but you can also supply custom layouts.
+	// Layouts must use the reference time Mon Jan 2 15:04:05 MST 2006
+	// to show the pattern with which to format/parse a given time/string.
+	// The example time must be exactly as shown:
+	// the year 2006, 15 for the hour, Monday for the day of the week, etc.
+	p(t.Format("3:04PM"))
+	p(t.Format("Mon Jan _2 15:04:05 2006"))
+	p(t.Format("2006-01-02T15:04:05.999999-07:00"))
+	form := "3 04 PM"
+	t2, _ := time.Parse(form, "8 41 PM")
+	p(t2)
+
+	// For purely numeric representations you can also use
+	// standard string formatting with the extracted components of the time value.
+	fmt.Printf("%d-%02d-%02dT%02d:%02d:%02d-00:00\n",
+		t.Year(), t.Month(), t.Day(),
+		t.Hour(), t.Minute(), t.Second())
+
+	// Parse will return an error on malformed input explaining the parsing problem.
+	_, err := time.Parse("Mon Jan _2 15:04:05 2006", "8:41PM")
+	p(err)
+}
+```
+
+```sh
+go run time-formatting-parsing.go
+2014-04-15T18:00:15-07:00
+2012-11-01 22:08:41 +0000 +0000
+6:00PM
+Tue Apr 15 18:00:15 2014
+2014-04-15T18:00:15.161182-07:00
+0000-01-01 20:41:00 +0000 UTC
+2014-04-15T18:00:15-00:00
+parsing time "8:41PM" as "Mon Jan _2 15:04:05 2006": ...
+```
