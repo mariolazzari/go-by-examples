@@ -34,10 +34,14 @@ func main() {
 	fmt.Println(host)
 	fmt.Println(port)
 
-	//
+	// Here we extract the path and the fragment after the #.
 	fmt.Println(u.Path)
 	fmt.Println(u.Fragment)
 
+	// To get query params in a string of k=v format, use RawQuery.
+	// You can also parse query params into a map.
+	// The parsed query param maps are from strings to slices of strings,
+	// so index into [0] if you only want the first value.
 	fmt.Println(u.RawQuery)
 	m, _ := url.ParseQuery(u.RawQuery)
 	fmt.Println(m)

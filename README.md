@@ -3752,9 +3752,111 @@ strconv.ParseInt: parsing "wat": invalid syntax
 URLs provide a [uniform way to locate resources](https://adam.herokuapp.com/past/2010/3/30/urls_are_the_uniform_way_to_locate_resources/). Here’s how to parse URLs in Go.
 
 ```go
+package main
 
+import (
+	"fmt"
+	"net"
+	"net/url"
+)
+
+func main() {
+	// We’ll parse this example URL, which includes a scheme,
+	// authentication info, host, port, path, query params, and query fragment.
+	s := "postgres://user:pass@host.com:5432/path?k=v#f"
+
+	// Parse the URL and ensure there are no errors.
+	u, err := url.Parse(s)
+	if err != nil {
+		panic(err)
+	}
+
+	// Accessing the scheme is straightforward.
+	fmt.Println(u.Scheme)
+
+	// User contains all authentication info; call Username and Password
+	// on this for individual values.
+	fmt.Println(u.User)
+	fmt.Println(u.User.Username())
+	p, _ := u.User.Password()
+	fmt.Println(p)
+
+	// The Host contains both the hostname and the port, if present.
+	// Use SplitHostPort to extract them.
+	fmt.Println(u.Host)
+	host, port, _ := net.SplitHostPort(u.Host)
+	fmt.Println(host)
+	fmt.Println(port)
+
+	// Here we extract the path and the fragment after the #.
+	fmt.Println(u.Path)
+	fmt.Println(u.Fragment)
+
+	// To get query params in a string of k=v format, use RawQuery.
+	// You can also parse query params into a map.
+	// The parsed query param maps are from strings to slices of strings,
+	// so index into [0] if you only want the first value.
+	fmt.Println(u.RawQuery)
+	m, _ := url.ParseQuery(u.RawQuery)
+	fmt.Println(m)
+	fmt.Println(m["k"][0])
+}
 ```
 
 ```sh
-
+go run url-parsing.go
+postgres
+user:pass
+user
+pass
+host.com:5432
+host.com
+5432
+/path
+f
+k=v
+map[k:[v]]
+v
 ```
+
+## SHA256 Hashes
+
+[SHA256 hashes](https://en.wikipedia.org/wiki/SHA-2) are frequently used to compute short identities for binary or text blobs. For example, TLS/SSL certificates use SHA256 to compute a certificate’s signature. Here’s how to compute SHA256 hashes in Go.
+
+```go
+package main
+
+// Go implements several hash functions in various crypto/* packages.
+import (
+	"crypto/sha256"
+	"fmt"
+)
+
+func main() {
+	s := "sha256 this string"
+
+	// Here we start with a new hash.
+	h := sha256.New()
+
+	// Write expects bytes. If you have a string s,
+	// use []byte(s) to coerce it to bytes.
+	h.Write([]byte(s))
+
+	// This gets the finalized hash result as a byte slice.
+	// The argument to Sum can be used to append to an existing byte slice:
+	// it usually isn’t needed.
+	bs := h.Sum(nil)
+
+	fmt.Println(s)
+	fmt.Printf("%x\n", bs)
+}
+```
+
+```sh
+go run sha256-hashes.go
+sha256 this string
+1af1dfa857bf1d8814fe1af8983c18080019922e557f15a8a...
+```
+
+You can compute other hashes using a similar pattern to the one shown above. For example, to compute SHA512 hashes import crypto/sha512 and use sha512.New().
+Note that if you need cryptographically secure hashes, you should carefully research [hash strength](https://en.wikipedia.org/wiki/Cryptographic_hash_function)!
