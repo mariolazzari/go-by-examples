@@ -3860,3 +3860,512 @@ sha256 this string
 
 You can compute other hashes using a similar pattern to the one shown above. For example, to compute SHA512 hashes import crypto/sha512 and use sha512.New().
 Note that if you need cryptographically secure hashes, you should carefully research [hash strength](https://en.wikipedia.org/wiki/Cryptographic_hash_function)!
+
+## Base64 encoding
+
+Go provides built-in support for [base64 encoding/decoding](https://en.wikipedia.org/wiki/Base64).
+
+```go
+package main
+
+// This syntax imports the encoding/base64 package with the b64 name instead of the default base64.
+// It’ll save us some space below.
+import (
+	b64 "encoding/base64"
+	"fmt"
+)
+
+func main() {
+	// Here’s the string we’ll encode/decode.
+	data := "abc123!?$*&()'-=@~"
+
+	// Go supports both standard and URL-compatible base64.
+	// Here’s how to encode using the standard encoder.
+	// The encoder requires a []byte so we convert our string to that type.
+	sEnc := b64.StdEncoding.EncodeToString([]byte(data))
+	fmt.Println(sEnc)
+
+	// Decoding may return an error, which you can check if you don’t already know the input to be well-formed.
+	sDec, _ := b64.StdEncoding.DecodeString(sEnc)
+	fmt.Println(string(sDec))
+	fmt.Println()
+
+	// This encodes/decodes using a URL-compatible base64 format.
+	uEnc := b64.URLEncoding.EncodeToString([]byte(data))
+	fmt.Println(uEnc)
+	uDec, _ := b64.URLEncoding.DecodeString(uEnc)
+	fmt.Println(string(uDec))
+}
+```
+
+```sh
+go run base64-encoding.go
+YWJjMTIzIT8kKiYoKSctPUB+
+abc123!?$*&()'-=@~
+YWJjMTIzIT8kKiYoKSctPUB-
+abc123!?$*&()'-=@~
+```
+
+## Reading Files
+
+Reading and writing files are basic tasks needed for many Go programs. First we’ll look at some examples of reading files.
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"path/filepath"
+)
+
+// Reading files requires checking most calls for errors.
+// This helper will streamline our error checks below.
+func check(e error) {
+	if e != nil {
+		log.Println(e)
+	}
+}
+
+func main() {
+	// Perhaps the most basic file reading task is slurping a file’s entire contents into memory.
+	path := filepath.Join(os.TempDir(), "dat")
+	dat, err := os.ReadFile(path)
+	check(err)
+	fmt.Print(string(dat))
+
+	// You’ll often want more control over how and what parts of a file are read.
+	// For these tasks, start by Opening a file to obtain an os.File value.
+	f, err := os.Open(path)
+	check(err)
+
+	// Read some bytes from the beginning of the file.
+	// Allow up to 5 to be read but also note how many actually were read.
+	b1 := make([]byte, 5)
+	n1, err := f.Read(b1)
+	check(err)
+	fmt.Printf("%d bytes: %s\n", n1, string(b1[:n1]))
+
+	// You can also Seek to a known location in the file and Read from there.
+	o2, err := f.Seek(6, io.SeekStart)
+	check(err)
+	b2 := make([]byte, 2)
+	n2, err := f.Read(b2)
+	check(err)
+	fmt.Printf("%d bytes @ %d: ", n2, o2)
+	fmt.Printf("%v\n", string(b2[:n2]))
+
+	// Other methods of seeking are relative to the current cursor position,
+	_, err = f.Seek(2, io.SeekCurrent)
+	check(err)
+
+	// and relative to the end of the file.
+	_, err = f.Seek(-4, io.SeekEnd)
+	check(err)
+
+	// The io package provides some functions that may be helpful for file reading.
+	// For example, reads like the ones above can be more robustly implemented with ReadAtLeast.
+	o3, err := f.Seek(6, io.SeekStart)
+	check(err)
+	b3 := make([]byte, 2)
+	n3, err := io.ReadAtLeast(f, b3, 2)
+	check(err)
+	fmt.Printf("%d bytes @ %d: %s\n", n3, o3, string(b3))
+
+	// There is no built-in rewind, but Seek(0, io.SeekStart) accomplishes this.
+	_, err = f.Seek(0, io.SeekStart)
+	check(err)
+
+	// The bufio package implements a buffered reader that may be useful both for its efficiency
+	// with many small reads and because of the additional reading methods it provides.
+	r4 := bufio.NewReader(f)
+	b4, err := r4.Peek(5)
+	check(err)
+	fmt.Printf("5 bytes: %s\n", string(b4))
+
+	// Close the file when you’re done
+	// (usually this would be scheduled immediately after Opening with defer).
+	f.Close()
+}
+```
+
+```sh
+echo "hello" > /tmp/dat
+echo "go" >>   /tmp/dat
+go run reading-files.go
+hello
+go
+bytes: hello
+bytes @ 6: go
+bytes @ 6: go
+bytes: hello
+```
+
+## Writing files
+
+Writing files in Go follows similar patterns to the ones we saw earlier for reading.
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+func main() {
+	// To start, here’s how to dump a string (or just bytes) into a file.
+	d1 := []byte("hello\ngo\n")
+	path1 := filepath.Join(os.TempDir(), "dat1")
+	err := os.WriteFile(path1, d1, 0644)
+	check(err)
+
+	// For more granular writes, open a file for writing.
+	path2 := filepath.Join(os.TempDir(), "dat2")
+	f, err := os.Create(path2)
+	check(err)
+
+	// It’s idiomatic to defer a Close immediately after opening a file.
+	defer f.Close()
+
+	// You can Write byte slices as you’d expect.
+	d2 := []byte{115, 111, 109, 101, 10}
+	n2, err := f.Write(d2)
+	check(err)
+	fmt.Printf("wrote %d bytes\n", n2)
+
+	// A WriteString is also available.
+	n3, err := f.WriteString("writes\n")
+	check(err)
+	fmt.Printf("wrote %d bytes\n", n3)
+
+	// Issue a Sync to flush writes to stable storage.
+	f.Sync()
+
+	// bufio provides buffered writers in addition to the buffered readers we saw earlier.
+	w := bufio.NewWriter(f)
+	n4, err := w.WriteString("buffered\n")
+	check(err)
+	fmt.Printf("wrote %d bytes\n", n4)
+
+	// Use Flush to ensure all buffered operations have been applied to the underlying writer.
+	w.Flush()
+}
+```
+
+```sh
+go run writing_files.go
+wrote 5 bytes
+wrote 7 bytes
+wrote 9 bytes
+Then check the contents of the written files.
+
+cat /tmp/dat1
+hello
+go
+cat /tmp/dat2
+some
+writes
+buffered
+```
+
+## Line Filters
+
+A _line filter_ is a common type of program that reads input on stdin, processes it, and then prints some derived result to stdout. _grep_ and _sed_ are common line filters.
+
+```go
+// Here’s an example line filter in Go that writes a capitalized version of all input text.
+// You can use this pattern to write your own Go line filters.
+
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"strings"
+)
+
+func main() {
+	// Wrapping the unbuffered os.Stdin with a buffered scanner gives us a convenient Scan method
+	// that advances the scanner to the next token; which is the next line in the default scanner.
+	scanner := bufio.NewScanner(os.Stdin)
+
+	// Text returns the current token, here the next line, from the input.
+	for scanner.Scan() {
+		// Text returns the current token, here the next line, from the input.
+		ucl := strings.ToUpper(scanner.Text())
+		// Write out the uppercased line.
+		fmt.Println(ucl)
+	}
+
+	// Check for errors during Scan.
+	// End of file is expected and not reported by Scan as an error.
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
+	}
+}
+```
+
+```sh
+echo 'hello'   > /tmp/lines
+echo 'filter' >> /tmp/lines
+cat /tmp/lines | go run line-filters.go
+HELLO
+FILTER
+```
+
+## File Paths
+
+The filepath package provides functions to parse and construct file paths in a way that is portable between operating systems; dir/file on Linux vs. dir\file on Windows, for example.
+
+```go
+package main
+
+import (
+	"fmt"
+	"path/filepath"
+	"strings"
+)
+
+func main() {
+	// Join should be used to construct paths in a portable way.
+	// It takes any number of arguments and constructs a hierarchical path from them.
+	p := filepath.Join("dir1", "dir2", "filename")
+	fmt.Println("p:", p)
+
+	// You should always use Join instead of concatenating /s or \s manually.
+	// In addition to providing portability,
+	// Join will also normalize paths by removing superfluous separators and directory changes.
+	fmt.Println(filepath.Join("dir1//", "filename"))
+	fmt.Println(filepath.Join("dir1/../dir1", "filename"))
+
+	// Dir and Base can be used to split a path to the directory and the file.
+	// Alternatively, Split will return both in the same call.
+	fmt.Println("Dir(p):", filepath.Dir(p))
+	fmt.Println("Base(p):", filepath.Base(p))
+
+	// We can check whether a path is absolute.
+	fmt.Println(filepath.IsAbs("dir/file"))
+	fmt.Println(filepath.IsAbs("/dir/file"))
+
+	filename := "config.json"
+
+	// Some file names have extensions following a dot.
+	// We can split the extension out of such names with Ext.
+	ext := filepath.Ext(filename)
+	fmt.Println(ext)
+
+	// To find the file’s name with the extension removed, use strings.TrimSuffix.
+	fmt.Println(strings.TrimSuffix(filename, ext))
+
+	// Rel finds a relative path between a base and a target.
+	// It returns an error if the target cannot be made relative to base.
+	rel, err := filepath.Rel("a/b", "a/b/t/file")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(rel)
+
+	rel, err = filepath.Rel("a/b", "a/c/t/file")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(rel)
+}
+```
+
+```sh
+go run file-paths.go
+p: dir1/dir2/filename
+dir1/filename
+dir1/filename
+Dir(p): dir1/dir2
+Base(p): filename
+false
+true
+.json
+config
+t/file
+../c/t/file
+```
+
+## Directories
+
+Go has several useful functions for working with directories in the file system.
+
+```go
+package main
+
+import (
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+)
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+func main() {
+	// Create a new sub-directory in the current working directory.
+	err := os.Mkdir("subdir", 0755)
+	check(err)
+
+	// When creating temporary directories, it’s good practice to defer their removal.
+	// os.RemoveAll will delete a whole directory tree (similarly to rm -rf).
+	defer os.RemoveAll("subdir")
+
+	createEmptyFile := func(name string) {
+		d := []byte("")
+		check(os.WriteFile(name, d, 0644))
+	}
+
+	// Helper function to create a new empty file.
+	createEmptyFile("subdir/file1")
+
+	// We can create a hierarchy of directories, including parents with MkdirAll.
+	// This is similar to the command-line mkdir -p.
+	err = os.MkdirAll("subdir/parent/child", 0755)
+	check(err)
+
+	createEmptyFile("subdir/parent/file2")
+	createEmptyFile("subdir/parent/file3")
+	createEmptyFile("subdir/parent/child/file4")
+
+	// ReadDir lists directory contents, returning a slice of os.DirEntry objects.
+	c, err := os.ReadDir("subdir/parent")
+	check(err)
+
+	fmt.Println("Listing subdir/parent")
+	for _, entry := range c {
+		fmt.Println(" ", entry.Name(), entry.IsDir())
+	}
+
+	// Chdir lets us change the current working directory, similarly to cd.
+	err = os.Chdir("subdir/parent/child")
+	check(err)
+
+	// Now we’ll see the contents of subdir/parent/child when listing the current directory.
+	c, err = os.ReadDir(".")
+	check(err)
+
+	fmt.Println("Listing subdir/parent/child")
+	for _, entry := range c {
+		fmt.Println(" ", entry.Name(), entry.IsDir())
+	}
+
+	// cd back to where we started.
+	err = os.Chdir("../../..")
+	check(err)
+
+	// We can also visit a directory recursively, including all its sub-directories.
+	// WalkDir accepts a callback function to handle every file or directory visited.
+	fmt.Println("Visiting subdir")
+	err = filepath.WalkDir("subdir", visit)
+}
+
+// visit is called for every file or directory found recursively by filepath.WalkDir.
+func visit(path string, d fs.DirEntry, err error) error {
+	if err != nil {
+		return err
+	}
+	fmt.Println(" ", path, d.IsDir())
+	return nil
+}
+```
+
+```sh
+go run directories.go
+Listing subdir/parent
+  child true
+  file2 false
+  file3 false
+Listing subdir/parent/child
+  file4 false
+Visiting subdir
+  subdir true
+  subdir/file1 false
+  subdir/parent true
+  subdir/parent/child true
+  subdir/parent/child/file4 false
+  subdir/parent/file2 false
+  subdir/parent/file3 false
+```
+
+## Temporary Files and Directories
+
+Throughout program execution, we often want to create data that isn’t needed after the program exits. _Temporary files and directories_ are useful for this purpose since they don’t pollute the file system over time.
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+func main() {
+	// The easiest way to create a temporary file is by calling os.CreateTemp.
+	// It creates a file and opens it for reading and writing.
+	// We provide "" as the first argument,
+	// so os.CreateTemp will create the file in the default location for our OS.
+	f, err := os.CreateTemp("", "sample")
+	check(err)
+
+	// Display the name of the temporary file.
+	// On Unix-based OSes the directory will likely be /tmp.
+	// The file name starts with the prefix given as the second argument to os.CreateTemp
+	// and the rest is chosen automatically to ensure that concurrent calls will always create different file names.
+	fmt.Println("Temp file name:", f.Name())
+
+	// Clean up the file after we’re done.
+	// The OS is likely to clean up temporary files by itself after some time, but it’s good practice to do this explicitly.
+	defer os.Remove(f.Name())
+
+	// We can write some data to the file.
+	_, err = f.Write([]byte{1, 2, 3, 4})
+	check(err)
+
+	// If we intend to write many temporary files, we may prefer to create a temporary directory.
+	// os.MkdirTemp’s arguments are the same as CreateTemp’s, but it returns a directory name rather than an open file.
+	dname, err := os.MkdirTemp("", "sampledir")
+	check(err)
+	fmt.Println("Temp dir name:", dname)
+
+	defer os.RemoveAll(dname)
+
+	// Now we can synthesize temporary file names by prefixing them with our temporary directory.
+	fname := filepath.Join(dname, "file1")
+	err = os.WriteFile(fname, []byte{1, 2}, 0666)
+	check(err)
+}
+```
+
+```sh
+go run temporary-files-and-directories.go
+Temp file name: /tmp/sample610887201
+Temp dir name: /tmp/sampledir898854668
+```
