@@ -4369,3 +4369,315 @@ go run temporary-files-and-directories.go
 Temp file name: /tmp/sample610887201
 Temp dir name: /tmp/sampledir898854668
 ```
+
+## Embed
+
+_//go:embed_ is a [compiler directive](https://pkg.go.dev/cmd/compile#hdr-Compiler_Directives) that allows programs to include arbitrary files and folders in the Go binary at build time. Read more about the embed directive [here](https://pkg.go.dev/embed).
+
+```go
+package main
+
+// Import the embed package;
+// if you don’t use any exported identifiers from this package,
+// you can do a blank import with _ "embed".
+import (
+	"embed"
+)
+
+// embed directives accept paths relative to the directory containing the Go source file.
+// This directive embeds the contents of the file into the string variable immediately following it.
+
+//go:embed folder/single_file.txt
+var fileString string
+
+// Or embed the contents of the file into a []byte.
+
+//go:embed folder/single_file.txt
+var fileByte []byte
+
+// We can also embed multiple files or even folders with wildcards.
+// This uses a variable of the embed.FS type, which implements a simple virtual file system.
+
+//go:embed folder/single_file.txt
+//go:embed folder/*.hash
+var folder embed.FS
+
+func main() {
+	// Print out the contents of single_file.txt.
+	print(fileString)
+	print(string(fileByte))
+
+	// Retrieve some files from the embedded folder.
+	content1, _ := folder.ReadFile("folder/file1.hash")
+	print(string(content1))
+
+	content2, _ := folder.ReadFile("folder/file2.hash")
+	print(string(content2))
+}
+```
+
+```sh
+mkdir -p folder
+echo "hello go" > folder/single_file.txt
+echo "123" > folder/file1.hash
+echo "456" > folder/file2.hash
+go run embed.go
+hello go
+hello go
+123
+456
+```
+
+## Testing and Benchmarking
+
+Unit testing is an important part of writing principled Go programs. The testing package provides the tools we need to write unit tests and the go test command runs tests.
+
+```go
+// For the sake of demonstration, this code is in package main, but it could be any package.
+// Testing code typically lives in the same package as the code it tests.
+package main
+
+import (
+	"fmt"
+	"testing"
+)
+
+// We’ll be testing this simple implementation of an integer minimum.
+// Typically, the code we’re testing would be in a source file named something like intutils.go,
+// and the test file for it would then be named intutils_test.go
+func IntMin(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// A test is created by writing a function with a name beginning with Test
+func TestIntMinBasic(t *testing.T) {
+	ans := IntMin(2, -2)
+	if ans != -2 {
+		// t.Error* will report test failures but continue executing the test.
+		// t.Fatal* will report test failures and stop the test immediately.
+		t.Errorf("IntMin(2, -2) = %d; want -2", ans)
+	}
+}
+
+func TestIntMinTableDriven(t *testing.T) {
+	// Writing tests can be repetitive, so it’s idiomatic to use a table-driven style,
+	// where test inputs and expected outputs are listed in a table and a single loop walks
+	// over them and performs the test logic.
+	var tests = []struct {
+		a, b int
+		want int
+	}{
+		{0, 1, 0},
+		{1, 0, 0},
+		{2, -2, -2},
+		{0, -1, -1},
+		{-1, 0, -1},
+	}
+
+	for _, tt := range tests {
+		// t.Run enables running “subtests”, one for each table entry.
+		// These are shown separately when executing go test -v
+		testname := fmt.Sprintf("%d,%d", tt.a, tt.b)
+		t.Run(testname, func(t *testing.T) {
+			ans := IntMin(tt.a, tt.b)
+			if ans != tt.want {
+				t.Errorf("got %d, want %d", ans, tt.want)
+			}
+		})
+	}
+}
+
+// Benchmark tests typically go in _test.go files and are named beginning with Benchmark.
+// Any code that’s required for the benchmark to run but should not be measured goes before this loop.
+func BenchmarkIntMin(b *testing.B) {
+	for b.Loop() {
+		// The benchmark runner will automatically execute this loop body many times to determine
+		// a reasonable estimate of the run-time of a single iteration.
+		IntMin(1, 2)
+	}
+}
+```
+
+```sh
+go test -v
+== RUN   TestIntMinBasic
+--- PASS: TestIntMinBasic (0.00s)
+=== RUN   TestIntMinTableDriven
+=== RUN   TestIntMinTableDriven/0,1
+=== RUN   TestIntMinTableDriven/1,0
+=== RUN   TestIntMinTableDriven/2,-2
+=== RUN   TestIntMinTableDriven/0,-1
+=== RUN   TestIntMinTableDriven/-1,0
+--- PASS: TestIntMinTableDriven (0.00s)
+    --- PASS: TestIntMinTableDriven/0,1 (0.00s)
+    --- PASS: TestIntMinTableDriven/1,0 (0.00s)
+    --- PASS: TestIntMinTableDriven/2,-2 (0.00s)
+    --- PASS: TestIntMinTableDriven/0,-1 (0.00s)
+    --- PASS: TestIntMinTableDriven/-1,0 (0.00s)
+PASS
+ok      examples/testing-and-benchmarking    0.023s
+```
+
+Run all tests in the current project in verbose mode.
+
+```sh
+go test -bench=.
+goos: darwin
+goarch: arm64
+pkg: examples/testing
+BenchmarkIntMin-8 1000000000 0.3136 ns/op
+PASS
+ok      examples/testing-and-benchmarking    0.351s
+```
+
+Run all benchmarks in the current project. All tests are run prior to benchmarks. The bench flag filters benchmark function names with a regexp.
+
+## Command-Line Arguments
+
+[Command-line arguments](https://en.wikipedia.org/wiki/Command-line_interface#Arguments) are a common way to parameterize execution of programs. For example, go run hello.go uses run and hello.go arguments to the go program.
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	// os.Args provides access to raw command-line arguments.
+	// Note that the first value in this slice is the path to the program,
+	// and os.Args[1:] holds the arguments to the program.
+	argsWithProg := os.Args
+	argsWithoutProg := os.Args[1:]
+
+	// You can get individual args with normal indexing.
+	arg := os.Args[3]
+
+	fmt.Println(argsWithProg)
+	fmt.Println(argsWithoutProg)
+	fmt.Println(arg)
+}
+```
+
+```sh
+go build command-line-arguments.go
+./command-line-arguments a b c d
+[./command-line-arguments a b c d]
+[a b c d]
+c
+```
+
+## Command-Line Flags
+
+[Command-line flags](https://en.wikipedia.org/wiki/Command-line_interface#Command-line_option) are a common way to specify options for command-line programs. For example, in wc -l the -l is a command-line flag.
+
+```go
+package main
+
+// Go provides a flag package supporting basic command-line flag parsing.
+// We’ll use this package to implement our example command-line program.
+import (
+	"flag"
+	"fmt"
+)
+
+func main() {
+	// Basic flag declarations are available for string, integer, and boolean options.
+	// Here we declare a string flag word with a default value "foo" and a short description.
+	// This flag.String function returns a string pointer (not a string value);
+	// we’ll see how to use this pointer below.
+	wordPtr := flag.String("word", "foo", "a string")
+
+	// This declares numb and fork flags, using a similar approach to the word flag.
+	numbPtr := flag.Int("numb", 42, "an int")
+	forkPtr := flag.Bool("fork", false, "a bool")
+
+	// It’s also possible to declare an option that uses an existing var declared elsewhere in the program.
+	// Note that we need to pass in a pointer to the flag declaration function.
+	var svar string
+	flag.StringVar(&svar, "svar", "bar", "a string var")
+
+	// Once all flags are declared, call flag.Parse() to execute the command-line parsing.
+	flag.Parse()
+
+	// Here we’ll just dump out the parsed options and any trailing positional arguments.
+	// Note that we need to dereference the pointers with e.g. *wordPtr to get the actual option values.
+	fmt.Println("word:", *wordPtr)
+	fmt.Println("numb:", *numbPtr)
+	fmt.Println("fork:", *forkPtr)
+	fmt.Println("svar:", svar)
+	fmt.Println("tail:", flag.Args())
+}
+```
+
+```sh
+/command-line-flags -word=opt -numb=7 -fork -svar=flag
+word: opt
+numb: 7
+fork: true
+svar: flag
+tail: []
+```
+
+## Command-Line Subcommands
+
+Some command-line tools, like the go tool or git have many subcommands, each with its own set of flags. For example, go build and go get are two different subcommands of the go tool. The flag package lets us easily define simple subcommands that have their own flags.
+
+```go
+package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+)
+
+func main() {
+	// We declare a subcommand using the NewFlagSet function,
+	// and proceed to define new flags specific for this subcommand.
+	fooCmd := flag.NewFlagSet("foo", flag.ExitOnError)
+	fooEnable := fooCmd.Bool("enable", false, "enable")
+	fooName := fooCmd.String("name", "", "name")
+
+	// For a different subcommand we can define different supported flags.
+	barCmd := flag.NewFlagSet("bar", flag.ExitOnError)
+	barLevel := barCmd.Int("level", 0, "level")
+
+	// The subcommand is expected as the first argument to the program.
+	if len(os.Args) < 2 {
+		fmt.Println("expected 'foo' or 'bar' subcommands")
+		os.Exit(1)
+	}
+
+	// Check which subcommand is invoked.
+	switch os.Args[1] {
+	// For every subcommand, we parse its own flags and have access to trailing positional arguments.
+	case "foo":
+		fooCmd.Parse(os.Args[2:])
+		fmt.Println("subcommand 'foo'")
+		fmt.Println("  enable:", *fooEnable)
+		fmt.Println("  name:", *fooName)
+		fmt.Println("  tail:", fooCmd.Args())
+	case "bar":
+		barCmd.Parse(os.Args[2:])
+		fmt.Println("subcommand 'bar'")
+		fmt.Println("  level:", *barLevel)
+		fmt.Println("  tail:", barCmd.Args())
+	default:
+		fmt.Println("expected 'foo' or 'bar' subcommands")
+		os.Exit(1)
+	}
+}
+```
+
+```sh
+./command-line-subcommands foo -enable -name=joe a1 a2
+subcommand 'foo'
+  enable: true
+  name: joe
+  tail: [a1 a2]
+```
