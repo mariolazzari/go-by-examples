@@ -5123,3 +5123,135 @@ drwxr-xr-x  4 mark 136B Oct 3 16:29 .
 drwxr-xr-x 91 mark 3.0K Oct 3 12:50 ..
 -rw-r--r--  1 mark 1.3K Oct 3 16:28 spawning-processes.go
 ```
+
+## Exec'ing Processes
+
+In the previous example we looked at spawning external processes. We do this when we need an external process accessible to a running Go process. Sometimes we just want to completely replace the current Go process with another (perhaps non-Go) one. To do this we’ll use Go’s implementation of the classic exec function.
+
+```go
+package main
+
+import (
+	"os"
+	"os/exec"
+	"syscall"
+)
+
+func main() {
+	// For our example we’ll exec ls.
+	// Go requires an absolute path to the binary we want to execute,
+	// so we’ll use exec.LookPath to find it (probably /bin/ls).
+	binary, lookErr := exec.LookPath("ls")
+	if lookErr != nil {
+		panic(lookErr)
+	}
+
+	// Exec requires arguments in slice form (as opposed to one big string).
+	// We’ll give ls a few common arguments.
+	// Note that the first argument should be the program name.
+	args := []string{"ls", "-a", "-l", "-h"}
+
+	// Exec also needs a set of environment variables to use.
+	// Here we just provide our current environment.
+	env := os.Environ()
+
+	// Here’s the actual syscall.Exec call.
+	// If this call is successful, the execution of our process will
+	// end here and be replaced by the /bin/ls -a -l -h process.
+	// If there is an error we’ll get a return value.
+	execErr := syscall.Exec(binary, args, env)
+	if execErr != nil {
+		panic(execErr)
+	}
+}
+```
+
+When we run our program it is replaced by ls.
+
+```sh
+go run execing-processes.go
+total 16
+drwxr-xr-x  4 mark 136B Oct 3 16:29 .
+drwxr-xr-x 91 mark 3.0K Oct 3 12:50 ..
+-rw-r--r--  1 mark 1.3K Oct 3 16:28 execing-processes.go
+```
+
+Note that Go does not offer a classic Unix fork function. Usually this isn’t an issue though, since starting goroutines, spawning processes, and exec’ing processes covers most use cases for fork.
+
+## Signals
+
+Sometimes we’d like our Go programs to intelligently handle [Unix signals](<https://en.wikipedia.org/wiki/Signal_(IPC)>). For example, we might want a server to gracefully shutdown when it receives a SIGTERM, or a command-line tool to stop processing input if it receives a SIGINT. Here’s a modern way to handle signals using contexts.
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"os/signal"
+	"syscall"
+)
+
+func main() {
+	// signal.NotifyContext returns a context that’s canceled when one of the listed signals arrives.
+	ctx, stop := signal.NotifyContext(
+		context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	// The program will wait here until one of the configured signals is received.
+	fmt.Println("awaiting signal")
+	<-ctx.Done()
+
+	// context.Cause reports why the context was canceled.
+	// For a signal-triggered cancellation, this includes the signal value.
+	fmt.Println()
+	fmt.Println(context.Cause(ctx))
+	fmt.Println("exiting")
+}
+```
+
+```sh
+go run signals.go
+awaiting signal
+^C
+interrupt signal received
+exiting
+```
+
+## Exit
+
+Use _os.Exit_ to immediately exit with a given status.
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	// defers will not be run when using os.Exit, so this fmt.Println will never be called.
+	defer fmt.Println("!")
+	// Exit with status 3.
+	os.Exit(3)
+}
+```
+
+Note that unlike e.g. C, Go does not use an integer return value from main to indicate exit status. If you’d like to exit with a non-zero status you should use os.Exit.
+
+```sh
+go run exit.go
+exit status 3
+```
+
+By building and executing a binary you can see the status in the terminal.
+
+```sh
+go build exit.go
+./exit
+echo $?
+3
+```
+
+Note that the ! from our program never got printed.
