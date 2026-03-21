@@ -4681,3 +4681,445 @@ subcommand 'foo'
   name: joe
   tail: [a1 a2]
 ```
+
+## Environment Variables
+
+[Environment variables](https://en.wikipedia.org/wiki/Environment_variable) are a universal mechanism for [conveying configuration information to Unix programs](https://www.12factor.net/config). Let’s look at how to set, get, and list environment variables.
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+)
+
+func main() {
+	// To set a key/value pair, use os.Setenv. To get a value for a key, use os.Getenv.
+	// This will return an empty string if the key isn’t present in the environment.
+	os.Setenv("FOO", "1")
+	fmt.Println("FOO:", os.Getenv("FOO"))
+	fmt.Println("BAR:", os.Getenv("BAR"))
+
+	// Use os.Environ to list all key/value pairs in the environment.
+	// This returns a slice of strings in the form KEY=value.
+	// You can strings.SplitN them to get the key and value.
+	// Here we print all the keys.
+	fmt.Println()
+	for _, e := range os.Environ() {
+		pair := strings.SplitN(e, "=", 2)
+		fmt.Println(pair[0])
+	}
+}
+```
+
+```sh
+go run environment-variables.go
+FOO: 1
+BAR:
+```
+
+## Logging
+
+The Go standard library provides straightforward tools for outputting logs from Go programs, with the [log package](https://pkg.go.dev/log) for free-form output and the [log/slog](https://pkg.go.dev/log/slog) package for structured output.
+
+```go
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"log"
+	"os"
+
+	"log/slog"
+)
+
+func main() {
+	// Simply invoking functions like Println from the log package uses the standard logger,
+	// which is already pre-configured for reasonable logging output to os.Stderr.
+	// Additional methods like Fatal* or Panic* will exit the program after logging.
+	log.Println("standard logger")
+
+	// Loggers can be configured with flags to set their output format.
+	// By default, the standard logger has the log.Ldate and log.Ltime flags set,
+	// and these are collected in log.LstdFlags.
+	// We can change its flags to emit time with microsecond accuracy, for example.
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+	log.Println("with micro")
+
+	// It also supports emitting the file name and line from which the log function is called.
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.Println("with file/line")
+
+	// It may be useful to create a custom logger and pass it around.
+	// When creating a new logger, we can set a prefix to distinguish its output from other loggers.
+	mylog := log.New(os.Stdout, "my:", log.LstdFlags)
+	mylog.Println("from mylog")
+
+	// We can set the prefix on existing loggers (including the standard one) with the SetPrefix method.
+	mylog.SetPrefix("ohmy:")
+	mylog.Println("from mylog")
+
+	// Loggers can have custom output targets; any io.Writer works.
+	var buf bytes.Buffer
+	buflog := log.New(&buf, "buf:", log.LstdFlags)
+
+	// This call writes the log output into buf.
+	buflog.Println("hello")
+
+	// This will actually show it on standard output.
+	fmt.Print("from buflog:", buf.String())
+
+	// The slog package provides structured log output.
+	// For example, logging in JSON format is straightforward.
+	jsonHandler := slog.NewJSONHandler(os.Stderr, nil)
+	myslog := slog.New(jsonHandler)
+	myslog.Info("hi there")
+
+	// In addition to the message, slog output can contain an arbitrary number of key=value pairs.
+	myslog.Info("hello again", "key", "val", "age", 25)
+}
+```
+
+```sh
+go run logging.go
+2023/08/22 10:45:16 standard logger
+2023/08/22 10:45:16.904141 with micro
+2023/08/22 10:45:16 logging.go:40: with file/line
+my:2023/08/22 10:45:16 from mylog
+ohmy:2023/08/22 10:45:16 from mylog
+from buflog:buf:2023/08/22 10:45:16 hello
+```
+
+These are wrapped for clarity of presentation on the website; in reality they are emitted on a single line.
+
+```sh
+{"time":"2023-08-22T10:45:16.904166391-07:00",
+ "level":"INFO","msg":"hi there"}
+{"time":"2023-08-22T10:45:16.904178985-07:00",
+    "level":"INFO","msg":"hello again",
+    "key":"val","age":25}
+```
+
+## HTTP client
+
+The Go standard library comes with excellent support for HTTP clients and servers in the _net/http_ package. In this example we’ll use it to issue simple HTTP requests.
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"net/http"
+)
+
+func main() {
+	// Issue an HTTP GET request to a server.
+	// http.Get is a convenient shortcut around creating an http.Client object
+	// and calling its Get method; it uses the http.DefaultClient object which has useful default settings.
+	resp, err := http.Get("https://gobyexample.com")
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+
+	// Print the HTTP response status.
+	fmt.Println("Response status:", resp.Status)
+
+	// Print the first 5 lines of the response body.
+	scanner := bufio.NewScanner(resp.Body)
+	for i := 0; scanner.Scan() && i < 5; i++ {
+		fmt.Println(scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		panic(err)
+	}
+}
+```
+
+```sh
+go run http-clients.go
+Response status: 200 OK
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Go by Example</title>
+```
+
+## HTTP server
+
+Writing a basic HTTP server is easy using the net/http package.
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+)
+
+// A fundamental concept in net/http servers is handlers.
+// A handler is an object implementing the http.Handler interface.
+// A common way to write a handler is by using the http.HandlerFunc adapter
+// on functions with the appropriate signature.
+func hello(w http.ResponseWriter, req *http.Request) {
+	// Functions serving as handlers take a http.ResponseWriter
+	// and a http.Request as arguments.
+	// The response writer is used to fill in the HTTP response.
+	// Here our simple response is just “hello\n”.
+	fmt.Fprintf(w, "hello\n")
+}
+
+func headers(w http.ResponseWriter, req *http.Request) {
+	// This handler does something a little more sophisticated
+	// by reading all the HTTP request headers and echoing them into the response body.
+	for name, headers := range req.Header {
+		for _, h := range headers {
+			fmt.Fprintf(w, "%v: %v\n", name, h)
+		}
+	}
+}
+
+func main() {
+	// We register our handlers on server routes using the http.HandleFunc convenience function.
+	// It sets up the default router in the net/http package and takes a function as an argument.
+	http.HandleFunc("/hello", hello)
+	http.HandleFunc("/headers", headers)
+
+	// Finally, we call the ListenAndServe with the port and a handler.
+	// nil tells it to use the default router we’ve just set up.
+	http.ListenAndServe(":8090", nil)
+}
+```
+
+```sh
+go run http-server.go &
+curl localhost:8090/hello
+hello
+```
+
+## TCP Server
+
+The net package provides the tools we need to easily build TCP socket servers.
+
+```go
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"log"
+	"net"
+	"strings"
+)
+
+func main() {
+	// net.Listen starts the server on the given network (TCP) and address (port 8090 on all interfaces).
+	listener, err := net.Listen("tcp", ":8090")
+	if err != nil {
+		log.Fatal("Error listening:", err)
+	}
+	// Close the listener to free the port when the application exits.
+	defer listener.Close()
+
+	// Loop indefinitely to accept new client connections.
+	for {
+		// Wait for a connection.
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Println("Error accepting conn:", err)
+			continue
+		}
+
+		// We use a goroutine here to handle the connection so that the
+		// main loop can continue accepting more connections.
+		go handleConnection(conn)
+	}
+}
+
+// handleConnection handles a single client connection,
+// reading one line of text from the client and returning a response.
+func handleConnection(conn net.Conn) {
+	// Closing the connection releases resources when we are finished interacting with the client.
+	defer conn.Close()
+
+	// Use bufio.NewReader to read one line of data from the client (terminated by a newline).
+	reader := bufio.NewReader(conn)
+	message, err := reader.ReadString('\n')
+	if err != nil {
+		log.Printf("Read error: %v", err)
+		return
+	}
+
+	// Create and send a response back to the client, demonstrating two-way communication.
+	ackMsg := strings.ToUpper(strings.TrimSpace(message))
+	response := fmt.Sprintf("ACK: %s\n", ackMsg)
+	_, err = conn.Write([]byte(response))
+	if err != nil {
+		log.Printf("Server write error: %v", err)
+	}
+}
+```
+
+```sh
+go run tcp-server.go &
+echo "Hello from netcat" | nc localhost 8090
+ACK: HELLO FROM NETCAT
+```
+
+## Context
+
+In the previous example we looked at setting up a simple HTTP server. HTTP servers are useful for demonstrating the usage of context.Context for controlling cancellation. A Context carries deadlines, cancellation signals, and other request-scoped values across API boundaries and goroutines.
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"time"
+)
+
+func hello(w http.ResponseWriter, req *http.Request) {
+	// A context.Context is created for each request by the net/http machinery,
+	// and is available with the Context() method.
+	ctx := req.Context()
+	fmt.Println("server: hello handler started")
+	defer fmt.Println("server: hello handler ended")
+
+	// Wait for a few seconds before sending a reply to the client.
+	// This could simulate some work the server is doing.
+	// While working, keep an eye on the context’s Done() channel for a signal
+	// that we should cancel the work and return as soon as possible.
+	select {
+	case <-time.After(10 * time.Second):
+		fmt.Fprintf(w, "hello\n")
+	case <-ctx.Done():
+		// The context’s Err() method returns an error that explains why the Done() channel was closed.
+		err := ctx.Err()
+		fmt.Println("server:", err)
+		internalError := http.StatusInternalServerError
+		http.Error(w, err.Error(), internalError)
+	}
+}
+
+func main() {
+	// As before, we register our handler on the “/hello” route, and start serving.
+	http.HandleFunc("/hello", hello)
+	http.ListenAndServe(":8090", nil)
+}
+```
+
+Run the server in the background.
+
+```sh
+go run context.go &
+erver: hello handler started
+^C
+server: context canceled
+server: hello handler ended
+```
+
+Simulate a client request to /hello, hitting Ctrl+C shortly after starting to signal cancellation.
+
+## Spawning Processes
+
+Sometimes our Go programs need to spawn other processes.
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os/exec"
+)
+
+func main() {
+	// We’ll start with a simple command that takes no arguments
+	// or input and just prints something to stdout.
+	// The exec.Command helper creates an object to represent this external process.
+	dateCmd := exec.Command("date")
+
+	// The Output method runs the command, waits for it to finish and collects its standard output.
+	// If there were no errors, dateOut will hold bytes with the date info.
+	dateOut, err := dateCmd.Output()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("> date")
+	fmt.Println(string(dateOut))
+
+	// Output and other methods of Command will return *exec.Error if there was a problem
+	// executing the command (e.g. wrong path), and *exec.ExitError if the command ran
+	// but exited with a non-zero return code.
+	_, err = exec.Command("date", "-x").Output()
+	if err != nil {
+		if e, ok := errors.AsType[*exec.Error](err); ok {
+			fmt.Println("failed executing:", e)
+		} else if e, ok := errors.AsType[*exec.ExitError](err); ok {
+			exitCode := e.ExitCode()
+			fmt.Println("command exit rc =", exitCode)
+		} else {
+			panic(err)
+		}
+	}
+
+	// Next we’ll look at a slightly more involved case where we pipe data to the external process
+	// on its stdin and collect the results from its stdout.
+	grepCmd := exec.Command("grep", "hello")
+
+	// Here we explicitly grab input/output pipes, start the process, write some input to it,
+	// read the resulting output, and finally wait for the process to exit.
+	grepIn, _ := grepCmd.StdinPipe()
+	grepOut, _ := grepCmd.StdoutPipe()
+	grepCmd.Start()
+	grepIn.Write([]byte("hello grep\ngoodbye grep"))
+	grepIn.Close()
+	grepBytes, _ := io.ReadAll(grepOut)
+	grepCmd.Wait()
+
+	// We omitted error checks in the above example, but you could use the usual if err != nil pattern
+	// for all of them. We also only collect the StdoutPipe results,
+	// but you could collect the StderrPipe in exactly the same way.
+	fmt.Println("> grep hello")
+	fmt.Println(string(grepBytes))
+
+	// Note that when spawning commands we need to provide an explicitly delineated command
+	// and argument array, vs. being able to just pass in one command-line string.
+	// If you want to spawn a full command with a string, you can use bash’s -c option:
+	lsCmd := exec.Command("bash", "-c", "ls -a -l -h")
+	lsOut, err := lsCmd.Output()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("> ls -a -l -h")
+	fmt.Println(string(lsOut))
+}
+```
+
+The spawned programs return output that is the same as if we had run them directly from the command-line.
+
+```sh
+go run spawning-processes.go
+> date
+Thu 05 May 2022 10:10:12 PM PDT
+```
+
+_date_ doesn’t have a -x flag so it will exit with an error message and non-zero return code.
+
+```sh
+command exit rc = 1
+> grep hello
+hello grep
+> ls -a -l -h
+drwxr-xr-x  4 mark 136B Oct 3 16:29 .
+drwxr-xr-x 91 mark 3.0K Oct 3 12:50 ..
+-rw-r--r--  1 mark 1.3K Oct 3 16:28 spawning-processes.go
+```
